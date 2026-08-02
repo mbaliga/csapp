@@ -1,0 +1,93 @@
+name: Bootstrap Assay V1
+
+on:
+  push:
+    branches:
+      - agent/finish-csapp-v1
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bootstrap-assay-v1
+  cancel-in-progress: false
+
+jobs:
+  reconstruct-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out bootstrap branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle 8.11.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Reconstruct checked source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat \
+            .bootstrap/part-00 \
+            .bootstrap/part-01 \
+            .bootstrap/part-02 \
+            .bootstrap/rem-00 \
+            .bootstrap/rem-01 \
+            .bootstrap/rem-02 \
+            .bootstrap/rem-03 \
+            .bootstrap/rem-04 \
+            | base64 --decode > /tmp/assay-v1-source.tar.gz
+          echo "5cfa181541f5a789fd33b46bc6a539042abf8a6e209162c2a85bd20872989c77  /tmp/assay-v1-source.tar.gz" | sha256sum --check --strict
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          tar -xzf /tmp/assay-v1-source.tar.gz -C .
+          gradle wrapper --gradle-version 8.11.1 --distribution-type bin
+          chmod +x gradlew
+          python3 tools/verify_source.py
+
+      - name: Publish reconstructed source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Build Assay V1"
+          git push origin HEAD:agent/finish-csapp-v1
+
+      - name: Compile and test V1
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon \
+            :core-model:test \
+            :loop:test \
+            :triage:test \
+            :export:test \
+            :connectors:testDebugUnitTest \
+            :core-data:testDebugUnitTest \
+            :app:testDebugUnitTest \
+            :app:assembleDebug \
+            --stacktrace
+
+      - name: Run Android lint
+        shell: bash
+        run: ./gradlew --no-daemon :app:lintDebug --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: assay-v1-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
