@@ -1,0 +1,84 @@
+name: Materialize V1
+
+on:
+  push:
+    branches:
+      - agent/finish-csapp-v1
+    paths:
+      - bootstrap-v1/**
+      - .github/workflows/bootstrap.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: materialize-v1-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Install pinned Android SDK
+        run: yes | sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Materialize verified source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat bootstrap-v1/part-* | base64 --decode > /tmp/project.tar.xz
+          echo "3c74a22517f03d140c8d2487a1cf877d6a312008452483b4d95c56696d0a3845  /tmp/project.tar.xz" | sha256sum --check -
+          tar -xJf /tmp/project.tar.xz -C "$GITHUB_WORKSPACE"
+          rm -rf bootstrap bootstrap-code bootstrap-v1 .github/workflows/bootstrap.yml
+          gradle wrapper --gradle-version 8.11.1 --distribution-type bin
+          python3 tools/verify_source.py
+
+      - name: Commit readable V1 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: implement Fonebrew Customer Signals V1"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Unit tests and debug APK
+        run: >-
+          gradle
+          :core-model:test
+          :loop:test
+          :triage:test
+          :export:test
+          :connectors:testDebugUnitTest
+          :core-data:testDebugUnitTest
+          :app:testDebugUnitTest
+          :app:assembleDebug
+          --stacktrace
+
+      - name: Android lint
+        run: gradle :app:lintDebug --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: fonebrew-signals-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
