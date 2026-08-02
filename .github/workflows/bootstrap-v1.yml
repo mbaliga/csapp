@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/finish-csapp-v1
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -11,7 +14,7 @@ permissions:
 
 concurrency:
   group: bootstrap-assay-v1
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   reconstruct-and-verify:
@@ -57,6 +60,7 @@ jobs:
           python3 tools/verify_source.py
 
       - name: Publish reconstructed source
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
