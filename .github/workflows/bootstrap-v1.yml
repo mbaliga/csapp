@@ -48,15 +48,24 @@ jobs:
       - name: Install pinned Android SDK
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Verify source archive
-        run: echo "db120caa127a6502bd78d6af440db61aa1f69ed0faf3279a11dc0413e089296c  source.tar.gz" | sha256sum --check --strict
+      - name: Normalize and verify source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gzip -t source.tar.gz 2>/dev/null; then
+            cp source.tar.gz /tmp/csapp-source.tar.gz
+          else
+            base64 --decode source.tar.gz > /tmp/csapp-source.tar.gz
+            gzip -t /tmp/csapp-source.tar.gz
+          fi
+          echo "db120caa127a6502bd78d6af440db61aa1f69ed0faf3279a11dc0413e089296c  /tmp/csapp-source.tar.gz" | sha256sum --check --strict
 
       - name: Clear bootstrap checkout
         shell: bash
-        run: find . -mindepth 1 -maxdepth 1 ! -name .git ! -name source.tar.gz -exec rm -rf {} +
+        run: find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
 
       - name: Extract source archive
-        run: tar -xvzf source.tar.gz -C .
+        run: tar -xvzf /tmp/csapp-source.tar.gz -C .
 
       - name: Verify extracted source
         shell: bash
@@ -74,7 +83,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -f source.tar.gz .github/workflows/bootstrap-v1.yml
+          rm -f .github/workflows/bootstrap-v1.yml
           sed -i 's/agp = "9.3.0"/agp = "9.2.1"/' gradle/libs.versions.toml
           sed -i 's/gradle-9.5.0-bin.zip/gradle-9.4.1-bin.zip/' gradle/wrapper/gradle-wrapper.properties
           sed -i 's/Gradle 9.5/Gradle 9.4.1/g; s/gradle-version: "9.5.0"/gradle-version: "9.4.1"/g' README.md .github/workflows/android-ci.yml
