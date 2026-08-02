@@ -55,7 +55,7 @@ jobs:
           echo "db120caa127a6502bd78d6af440db61aa1f69ed0faf3279a11dc0413e089296c  source.tar.gz" | sha256sum --check --strict
           find . -mindepth 1 -maxdepth 1 ! -name .git ! -name source.tar.gz -exec rm -rf {} +
           tar -xzf source.tar.gz -C .
-          rm source.tar.gz .github/workflows/bootstrap-v1.yml
+          rm -f source.tar.gz .github/workflows/bootstrap-v1.yml
           sed -i 's/agp = "9.3.0"/agp = "9.2.1"/' gradle/libs.versions.toml
           sed -i 's/gradle-9.5.0-bin.zip/gradle-9.4.1-bin.zip/' gradle/wrapper/gradle-wrapper.properties
           sed -i 's/Gradle 9.5/Gradle 9.4.1/g; s/gradle-version: "9.5.0"/gradle-version: "9.4.1"/g' README.md .github/workflows/android-ci.yml
