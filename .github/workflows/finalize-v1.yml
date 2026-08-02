@@ -1,0 +1,103 @@
+name: Finalize V1
+
+on:
+  push:
+    branches:
+      - agent/private-dogfood-v1
+    paths:
+      - .github/workflows/finalize-v1.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: csapp-private-dogfood-v1-finalize
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Normalize product naming
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          allowed = {'.kt', '.kts', '.xml', '.md', '.json', '.properties', '.yml', '.yaml', '.txt'}
+          for path in Path('.').rglob('*'):
+              if not path.is_file() or '.git' in path.parts or path.suffix not in allowed:
+                  continue
+              text = path.read_text(errors='ignore')
+              updated = text.replace('Fonebrew Signals', 'CS App').replace('Assay', 'CS App')
+              if updated != text:
+                  path.write_text(updated)
+          PY
+          rm -f .github/workflows/finalize-v1.yml
+          if grep -RIl --exclude-dir=.git --exclude-dir=build --exclude='*.jar' -e 'Assay' -e 'Fonebrew Signals' . | grep -q .; then
+            echo 'Stale product naming remains.' >&2
+            exit 1
+          fi
+
+      - name: Verify source policy
+        run: python3 tools/verify_source.py
+
+      - name: Test, assemble, lint, and verify licenses
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build
+          ./gradlew --no-daemon \
+            :core-model:test \
+            :loop:test \
+            :triage:test \
+            :export:test \
+            :connectors:testDebugUnitTest \
+            :core-data:testDebugUnitTest \
+            :app:testDebugUnitTest \
+            :app:assembleDebug \
+            :app:lintDebug \
+            licenseCheck \
+            --stacktrace 2>&1 | tee build/final-verification.log
+
+      - name: Commit final V1 tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Finalize CS App private dogfood V1"
+          git push origin HEAD:agent/private-dogfood-v1
+
+      - name: Upload debug APK and verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: cs-app-private-dogfood-v1
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/reports/lint-results-debug.html
+            **/build/test-results/**
+            build/final-verification.log
+          if-no-files-found: error
