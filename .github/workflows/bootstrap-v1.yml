@@ -59,8 +59,6 @@ jobs:
           sed -i 's/agp = "9.3.0"/agp = "9.2.1"/' gradle/libs.versions.toml
           sed -i 's/gradle-9.5.0-bin.zip/gradle-9.4.1-bin.zip/' gradle/wrapper/gradle-wrapper.properties
           sed -i 's/Gradle 9.5/Gradle 9.4.1/g; s/gradle-version: "9.5.0"/gradle-version: "9.4.1"/g' README.md .github/workflows/android-ci.yml
-          gradle wrapper --gradle-version 9.4.1 --distribution-type bin
-          chmod +x gradlew
 
       - name: Publish readable source tree
         shell: bash
@@ -73,17 +71,37 @@ jobs:
           git push origin HEAD:agent/private-dogfood-v1
 
       - name: Unit tests and debug APK
-        run: ./gradlew --no-daemon test assembleDebug --stacktrace
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build
+          gradle --no-daemon test assembleDebug --stacktrace 2>&1 | tee build/gradle-build.log
 
       - name: Android lint
-        run: ./gradlew --no-daemon lintDebug --stacktrace
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon lintDebug --stacktrace 2>&1 | tee build/gradle-lint.log
+
+      - name: Generate pinned Gradle wrapper
+        if: success()
+        run: gradle wrapper --gradle-version 9.4.1 --distribution-type bin
+
+      - name: Publish Gradle wrapper
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add gradlew gradlew.bat gradle/wrapper
+          if ! git diff --cached --quiet; then
+            git commit -m "build: add pinned Gradle wrapper"
+            git push origin HEAD:agent/private-dogfood-v1
+          fi
 
       - name: Runtime dependency report
         if: always()
         shell: bash
-        run: |
-          mkdir -p build
-          ./gradlew --no-daemon :app:dependencies --configuration releaseRuntimeClasspath > build/runtime-dependencies.txt || true
+        run: gradle --no-daemon :app:dependencies --configuration releaseRuntimeClasspath > build/runtime-dependencies.txt 2>&1 || true
 
       - name: Upload V1 artifacts
         if: always()
@@ -93,5 +111,7 @@ jobs:
           path: |
             app/build/outputs/apk/debug/*.apk
             **/build/reports/**
+            build/gradle-build.log
+            build/gradle-lint.log
             build/runtime-dependencies.txt
           if-no-files-found: warn
