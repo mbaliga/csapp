@@ -27,26 +27,8 @@ jobs:
           set -euo pipefail
           SOURCE_COMMIT=96be32f3aa40adeb0672f2c084d0f5548f887f7a
           SOURCE_BLOB=64af4dae7dcb066f88b0b7b499e2c1c6f5c7ae1b
-          git show "${SOURCE_COMMIT}:source.tar.gz" > /tmp/assay-source.encoded
-          test "$(git hash-object /tmp/assay-source.encoded)" = "$SOURCE_BLOB"
-          python3 - <<'PY'
-          import base64, re
-          from pathlib import Path
-          raw = Path('/tmp/assay-source.encoded').read_bytes()
-          lines = []
-          for raw_line in raw.splitlines():
-              line = raw_line.strip()
-              if len(line) >= 60 and re.fullmatch(rb'[A-Za-z0-9+/]+={0,2}', line):
-                  lines.append(line)
-          if not lines:
-              print(repr(raw[:500]))
-              raise SystemExit('No wrapped base64 payload lines found')
-          clean = b''.join(lines)
-          clean += b'=' * (-len(clean) % 4)
-          decoded = base64.b64decode(clean, validate=False)
-          Path('/tmp/assay-source.tar.gz').write_bytes(decoded)
-          print(f'extracted {len(lines)} wrapped lines into {len(decoded)} bytes')
-          PY
+          git show "${SOURCE_COMMIT}:source.tar.gz" > /tmp/assay-source.tar.gz
+          test "$(git hash-object /tmp/assay-source.tar.gz)" = "$SOURCE_BLOB"
           gzip --test /tmp/assay-source.tar.gz
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           tar -xzf /tmp/assay-source.tar.gz -C .
