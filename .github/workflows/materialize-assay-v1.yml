@@ -52,12 +52,21 @@ jobs:
           from pathlib import Path
           import re
 
+          replacements = {
+              'Fonebrew Signals': 'csapp',
+              'FonebrewCustomerSignals': 'csapp',
+              'fonebrew-signals': 'csapp',
+              'CS App': 'csapp',
+              'Assay': 'csapp',
+          }
           text_extensions = {'.kt', '.kts', '.xml', '.md', '.json', '.properties', '.yml', '.yaml', '.txt', '.pro'}
           for path in Path('.').rglob('*'):
               if not path.is_file() or '.git' in path.parts or path.suffix not in text_extensions:
                   continue
               text = path.read_text()
-              updated = text.replace('Fonebrew Signals', 'csapp').replace('CS App', 'csapp').replace('Assay', 'csapp')
+              updated = text
+              for old, new in replacements.items():
+                  updated = updated.replace(old, new)
               if updated != text:
                   path.write_text(updated)
 
