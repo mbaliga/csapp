@@ -16,34 +16,44 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - name: Checkout branch and source commit
+      - name: Checkout branch and recovery source
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Recover immutable source snapshot
+      - name: Recover checksum-pinned source snapshot
         shell: bash
         run: |
           set -euo pipefail
-          SOURCE_COMMIT=96be32f3aa40adeb0672f2c084d0f5548f887f7a
-          SOURCE_BLOB=64af4dae7dcb066f88b0b7b499e2c1c6f5c7ae1b
-          git cat-file -e "${SOURCE_COMMIT}:source.tar.gz"
-          git show "${SOURCE_COMMIT}:source.tar.gz" > /tmp/assay-source.b64
-          test "$(git hash-object /tmp/assay-source.b64)" = "$SOURCE_BLOB"
-          base64 --decode /tmp/assay-source.b64 > /tmp/assay-source.tar.gz
-          gzip --test /tmp/assay-source.tar.gz
+          git fetch --no-tags origin agent/finish-csapp-v1:refs/remotes/origin/agent/finish-csapp-v1
+          for part in part-00 part-01 part-02 part-03 part-04 part-05 part-06 part-07; do
+            git show "origin/agent/finish-csapp-v1:bootstrap-v1/${part}"
+          done | base64 --decode > /tmp/assay-v1-source.tar.xz
+          echo "3c74a22517f03d140c8d2487a1cf877d6a312008452483b4d95c56696d0a3845  /tmp/assay-v1-source.tar.xz" | sha256sum --check --strict
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          tar -xzf /tmp/assay-source.tar.gz -C .
+          tar -xJf /tmp/assay-v1-source.tar.xz -C .
           test -f settings.gradle.kts
           test -f app/src/main/AndroidManifest.xml
           test -f tools/verify_source.py
 
-      - name: Standardize Assay product identity
+      - name: Apply verified compile corrections and Assay identity
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
+          patches = [
+              (Path('app/src/main/kotlin/dev/fonebrew/cs/MainActivity.kt'), 'import androidx.lifecycle.viewModels\n', 'import androidx.lifecycle.viewModels\nimport androidx.lifecycle.lifecycleScope\n'),
+              (Path('app/src/main/kotlin/dev/fonebrew/cs/WorkScheduling.kt'), 'import java.util.concurrent.TimeUnit\n', 'import java.util.concurrent.TimeUnit\nimport kotlinx.coroutines.launch\n'),
+              (Path('app/src/test/kotlin/dev/fonebrew/cs/CoordinatorInvariantTest.kt'), 'import dev.fonebrew.cs.triage.TriageService\n', 'import dev.fonebrew.cs.triage.TriageService\nimport kotlinx.coroutines.flow.first\n'),
+          ]
+          for path, needle, replacement in patches:
+              text = path.read_text()
+              if replacement not in text:
+                  if needle not in text:
+                      raise SystemExit(f'Expected import anchor not found in {path}')
+                  path.write_text(text.replace(needle, replacement, 1))
+
           replacements = {
               Path('app/src/main/AndroidManifest.xml'): [('Fonebrew Signals', 'Assay')],
               Path('app/src/main/kotlin/dev/fonebrew/cs/CsUi.kt'): [('Fonebrew Signals', 'Assay')],
@@ -56,6 +66,9 @@ jobs:
                   text = text.replace(old, new)
               path.write_text(text)
           PY
+          rm -rf bootstrap bootstrap-code bootstrap-v1
+          rm -f source.tar.gz bootstrap.part-* bootstrap.payload.*
+          rm -f .github/workflows/bootstrap-v1.yml .github/workflows/recover-v1.yml .github/workflows/materialize-pr.yml .github/workflows/finalize-v1.yml .github/workflows/materialize-assay-v1.yml
           chmod +x gradlew tools/*.sh
 
       - name: Set up JDK 17
