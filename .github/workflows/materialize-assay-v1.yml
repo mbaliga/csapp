@@ -28,8 +28,10 @@ jobs:
           SOURCE_COMMIT=96be32f3aa40adeb0672f2c084d0f5548f887f7a
           SOURCE_BLOB=64af4dae7dcb066f88b0b7b499e2c1c6f5c7ae1b
           git cat-file -e "${SOURCE_COMMIT}:source.tar.gz"
-          git show "${SOURCE_COMMIT}:source.tar.gz" > /tmp/assay-source.tar.gz
-          test "$(git hash-object /tmp/assay-source.tar.gz)" = "$SOURCE_BLOB"
+          git show "${SOURCE_COMMIT}:source.tar.gz" > /tmp/assay-source.b64
+          test "$(git hash-object /tmp/assay-source.b64)" = "$SOURCE_BLOB"
+          base64 --decode /tmp/assay-source.b64 > /tmp/assay-source.tar.gz
+          gzip --test /tmp/assay-source.tar.gz
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           tar -xzf /tmp/assay-source.tar.gz -C .
           test -f settings.gradle.kts
