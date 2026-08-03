@@ -18,20 +18,16 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - name: Checkout full repository history
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Recover and verify readable csapp source
+      - name: Recover and prepare readable csapp source
         shell: bash
         run: |
           set -euo pipefail
-          source_commit=96be32f3aa40adeb0672f2c084d0f5548f887f7a
-          source_blob=64af4dae7dcb066f88b0b7b499e2c1c6f5c7ae1b
-          git show "${source_commit}:source.tar.gz" > /tmp/csapp-source.tar.gz
-          test "$(git hash-object /tmp/csapp-source.tar.gz)" = "$source_blob"
-
+          git show "96be32f3aa40adeb0672f2c084d0f5548f887f7a:source.tar.gz" > /tmp/csapp-source.tar.gz
+          test "$(git hash-object /tmp/csapp-source.tar.gz)" = "64af4dae7dcb066f88b0b7b499e2c1c6f5c7ae1b"
           set +e
           gzip -dc /tmp/csapp-source.tar.gz > /tmp/csapp-source.tar 2> /tmp/gzip-recovery.txt
           gzip_status=$?
@@ -48,7 +44,6 @@ jobs:
           extract_status=$?
           set -e
           echo "tar extraction status: $extract_status"
-
           test -f settings.gradle.kts
           test -f app/src/main/AndroidManifest.xml
           test -f tools/verify_source.py
@@ -57,35 +52,40 @@ jobs:
           from pathlib import Path
           import re
 
-          root = Path('.')
           text_extensions = {'.kt', '.kts', '.xml', '.md', '.json', '.properties', '.yml', '.yaml', '.txt', '.pro'}
-          for path in root.rglob('*'):
+          for path in Path('.').rglob('*'):
               if not path.is_file() or '.git' in path.parts or path.suffix not in text_extensions:
                   continue
-              text = path.read_text(errors='strict')
+              text = path.read_text()
               updated = text.replace('Fonebrew Signals', 'csapp').replace('CS App', 'csapp').replace('Assay', 'csapp')
               if updated != text:
                   path.write_text(updated)
 
           settings = Path('settings.gradle.kts')
-          settings_text = settings.read_text()
-          settings_text = re.sub(r'rootProject\.name\s*=\s*"[^"]+"', 'rootProject.name = "csapp"', settings_text, count=1)
-          settings.write_text(settings_text)
+          settings.write_text(re.sub(
+              r'rootProject\.name\s*=\s*"[^"]+"',
+              'rootProject.name = "csapp"',
+              settings.read_text(),
+              count=1,
+          ))
 
-          patches = [
-              (Path('app/src/main/kotlin/dev/fonebrew/cs/MainActivity.kt'), 'import androidx.lifecycle.viewModels\n', 'import androidx.lifecycle.viewModels\nimport androidx.lifecycle.lifecycleScope\n', 'lifecycleScope'),
-              (Path('app/src/main/kotlin/dev/fonebrew/cs/WorkScheduling.kt'), 'import java.util.concurrent.TimeUnit\n', 'import java.util.concurrent.TimeUnit\nimport kotlinx.coroutines.launch\n', 'launch {'),
-              (Path('app/src/test/kotlin/dev/fonebrew/cs/CoordinatorInvariantTest.kt'), 'import dev.fonebrew.cs.triage.TriageService\n', 'import dev.fonebrew.cs.triage.TriageService\nimport kotlinx.coroutines.flow.first\n', '.first()'),
+          required_imports = [
+              (Path('app/src/main/kotlin/dev/fonebrew/cs/MainActivity.kt'), 'androidx.lifecycle.lifecycleScope', 'lifecycleScope'),
+              (Path('app/src/main/kotlin/dev/fonebrew/cs/WorkScheduling.kt'), 'kotlinx.coroutines.launch', 'launch {'),
+              (Path('app/src/test/kotlin/dev/fonebrew/cs/CoordinatorInvariantTest.kt'), 'kotlinx.coroutines.flow.first', '.first()'),
           ]
-          for path, anchor, replacement, usage in patches:
+          for path, import_name, usage in required_imports:
               if not path.exists():
                   continue
               text = path.read_text()
-              imported = replacement.splitlines()[-1]
-              if usage in text and imported not in text:
-                  if anchor not in text:
-                      raise SystemExit(f'Expected import anchor missing in {path}')
-                  path.write_text(text.replace(anchor, replacement, 1))
+              import_line = f'import {import_name}'
+              if usage not in text or import_line in text:
+                  continue
+              lines = text.splitlines(keepends=True)
+              import_positions = [i for i, line in enumerate(lines) if line.startswith('import ')]
+              insert_at = import_positions[-1] + 1 if import_positions else 1
+              lines.insert(insert_at, import_line + '\n')
+              path.write_text(''.join(lines))
           PY
 
           rm -rf bootstrap bootstrap-code bootstrap-v1 transport transport2
@@ -98,7 +98,7 @@ jobs:
           grep -Fq 'android:label="csapp"' app/src/main/AndroidManifest.xml
           python3 tools/verify_source.py
 
-      - name: Summarize recovery failure
+      - name: Summarize source recovery failure
         if: failure()
         shell: bash
         run: |
@@ -108,32 +108,25 @@ jobs:
             echo "--- $file ---"
             tail -n 20 "$file" 2>/dev/null || echo missing
           done
-          echo '--- required files ---'
           for file in settings.gradle.kts app/src/main/AndroidManifest.xml tools/verify_source.py; do
-            if test -f "$file"; then echo "present: $file"; else echo "MISSING: $file"; fi
+            test -f "$file" && echo "present: $file" || echo "MISSING: $file"
           done
-          echo "extracted regular files: $(find . -path ./.git -prune -o -type f -print | wc -l)"
-          echo '--- final tar members ---'
-          tail -n 25 /tmp/tar-list.txt 2>/dev/null || true
-          echo '--- source verifier ---'
-          if test -f tools/verify_source.py; then python3 tools/verify_source.py || true; fi
+          echo "extracted files: $(find . -path ./.git -prune -o -type f -print | wc -l)"
+          test -f tools/verify_source.py && python3 tools/verify_source.py || true
           mkdir -p recovery-diagnostics
           cp /tmp/gzip-recovery.txt /tmp/tar-list.txt /tmp/tar-list-error.txt /tmp/tar-extract-error.txt recovery-diagnostics/ 2>/dev/null || true
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3
 
       - name: Install Android SDK packages
         run: yes | sdkmanager "platforms;android-36" "build-tools;35.0.0"
 
-      - name: Set up Gradle cache
-        uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v4
 
       - name: Install canonical Gradle wrapper
         run: |
