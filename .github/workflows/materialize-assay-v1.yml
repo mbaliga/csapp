@@ -3,6 +3,8 @@ name: Materialize Assay V1
 on:
   push:
     branches: ["agent/cs-app-v1"]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -96,6 +98,7 @@ jobs:
         run: ./gradlew licenseCheck --stacktrace --no-daemon
 
       - name: Commit readable verified source
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
