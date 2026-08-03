@@ -98,6 +98,28 @@ jobs:
           grep -Fq 'android:label="csapp"' app/src/main/AndroidManifest.xml
           python3 tools/verify_source.py
 
+      - name: Summarize recovery failure
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          echo '=== csapp recovery summary ==='
+          for file in /tmp/gzip-recovery.txt /tmp/tar-list-error.txt /tmp/tar-extract-error.txt; do
+            echo "--- $file ---"
+            tail -n 20 "$file" 2>/dev/null || echo missing
+          done
+          echo '--- required files ---'
+          for file in settings.gradle.kts app/src/main/AndroidManifest.xml tools/verify_source.py; do
+            if test -f "$file"; then echo "present: $file"; else echo "MISSING: $file"; fi
+          done
+          echo "extracted regular files: $(find . -path ./.git -prune -o -type f -print | wc -l)"
+          echo '--- final tar members ---'
+          tail -n 25 /tmp/tar-list.txt 2>/dev/null || true
+          echo '--- source verifier ---'
+          if test -f tools/verify_source.py; then python3 tools/verify_source.py || true; fi
+          mkdir -p recovery-diagnostics
+          cp /tmp/gzip-recovery.txt /tmp/tar-list.txt /tmp/tar-list-error.txt /tmp/tar-extract-error.txt recovery-diagnostics/ 2>/dev/null || true
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -159,4 +181,5 @@ jobs:
             build/final-verification.log
             build/csapp-v1-debug.sha256
             build/recovery/**
+            recovery-diagnostics/**
           if-no-files-found: warn
