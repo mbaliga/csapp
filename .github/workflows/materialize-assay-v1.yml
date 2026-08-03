@@ -21,53 +21,66 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Recover commit-pinned source snapshot
+      - name: Recover immutable source snapshot
         shell: bash
         run: |
           set -euo pipefail
-          SOURCE_COMMIT=3d9d0ce53d8894d3e8d2f4ddfa02409e5742b760
-          for part in part-00 part-01 part-02 part-03 part-04 part-05 part-06 part-07; do
-            git show "${SOURCE_COMMIT}:bootstrap-v1/${part}"
-          done | base64 --decode > /tmp/assay-v1-source.tar.xz
-          xz --test /tmp/assay-v1-source.tar.xz
-          sha256sum /tmp/assay-v1-source.tar.xz
+          SOURCE_COMMIT=96be32f3aa40adeb0672f2c084d0f5548f887f7a
+          SOURCE_BLOB=64af4dae7dcb066f88b0b7b499e2c1c6f5c7ae1b
+          git show "${SOURCE_COMMIT}:source.tar.gz" > /tmp/assay-source.encoded
+          test "$(git hash-object /tmp/assay-source.encoded)" = "$SOURCE_BLOB"
+          python3 - <<'PY'
+          import base64, re
+          from pathlib import Path
+          raw = Path('/tmp/assay-source.encoded').read_bytes()
+          clean = re.sub(rb'[^A-Za-z0-9+/=]', b'', raw)
+          clean += b'=' * (-len(clean) % 4)
+          decoded = base64.b64decode(clean, validate=False)
+          Path('/tmp/assay-source.tar.gz').write_bytes(decoded)
+          PY
+          gzip --test /tmp/assay-source.tar.gz
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          tar -xJf /tmp/assay-v1-source.tar.xz -C .
+          tar -xzf /tmp/assay-source.tar.gz -C .
           test -f settings.gradle.kts
           test -f app/src/main/AndroidManifest.xml
           test -f tools/verify_source.py
 
-      - name: Apply verified compile corrections and Assay identity
+      - name: Standardize Assay identity and remove delivery debris
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          patches = [
-              (Path('app/src/main/kotlin/dev/fonebrew/cs/MainActivity.kt'), 'import androidx.lifecycle.viewModels\n', 'import androidx.lifecycle.viewModels\nimport androidx.lifecycle.lifecycleScope\n'),
-              (Path('app/src/main/kotlin/dev/fonebrew/cs/WorkScheduling.kt'), 'import java.util.concurrent.TimeUnit\n', 'import java.util.concurrent.TimeUnit\nimport kotlinx.coroutines.launch\n'),
-              (Path('app/src/test/kotlin/dev/fonebrew/cs/CoordinatorInvariantTest.kt'), 'import dev.fonebrew.cs.triage.TriageService\n', 'import dev.fonebrew.cs.triage.TriageService\nimport kotlinx.coroutines.flow.first\n'),
+          root = Path('.')
+          optional_imports = [
+              (root / 'app/src/main/kotlin/dev/fonebrew/cs/MainActivity.kt', 'import androidx.lifecycle.viewModels\n', 'import androidx.lifecycle.viewModels\nimport androidx.lifecycle.lifecycleScope\n', 'lifecycleScope'),
+              (root / 'app/src/main/kotlin/dev/fonebrew/cs/WorkScheduling.kt', 'import java.util.concurrent.TimeUnit\n', 'import java.util.concurrent.TimeUnit\nimport kotlinx.coroutines.launch\n', 'launch {'),
           ]
-          for path, needle, replacement in patches:
+          for path, anchor, replacement, usage in optional_imports:
+              if not path.exists():
+                  continue
               text = path.read_text()
-              if replacement not in text:
-                  if needle not in text:
+              imported = replacement.splitlines()[-1]
+              if usage in text and imported not in text:
+                  if anchor not in text:
                       raise SystemExit(f'Expected import anchor not found in {path}')
-                  path.write_text(text.replace(needle, replacement, 1))
+                  path.write_text(text.replace(anchor, replacement, 1))
 
           replacements = {
-              Path('app/src/main/AndroidManifest.xml'): [('Fonebrew Signals', 'Assay')],
-              Path('app/src/main/kotlin/dev/fonebrew/cs/CsUi.kt'): [('Fonebrew Signals', 'Assay')],
-              Path('README.md'): [('# Fonebrew Signals', '# Assay'), ('**Fonebrew Signals**', '**Assay**')],
-              Path('.github/workflows/ci.yml'): [('fonebrew-signals-debug', 'assay-debug')],
+              root / 'app/src/main/AndroidManifest.xml': [('Fonebrew Signals', 'Assay'), ('CS App', 'Assay')],
+              root / 'app/src/main/kotlin/dev/fonebrew/cs/CsUi.kt': [('Fonebrew Signals', 'Assay'), ('CS App', 'Assay')],
+              root / 'README.md': [('# Fonebrew Signals', '# Assay'), ('# CS App', '# Assay'), ('**Fonebrew Signals**', '**Assay**'), ('**CS App**', '**Assay**')],
+              root / '.github/workflows/ci.yml': [('fonebrew-signals-debug', 'assay-debug'), ('cs-app-private-dogfood-v1', 'assay-v1-debug')],
           }
           for path, pairs in replacements.items():
+              if not path.exists():
+                  continue
               text = path.read_text()
               for old, new in pairs:
                   text = text.replace(old, new)
               path.write_text(text)
           PY
-          rm -rf bootstrap bootstrap-code bootstrap-v1
+          rm -rf bootstrap bootstrap-code bootstrap-v1 transport
           rm -f source.tar.gz bootstrap.part-* bootstrap.payload.*
           rm -f .github/workflows/bootstrap-v1.yml .github/workflows/recover-v1.yml .github/workflows/materialize-pr.yml .github/workflows/finalize-v1.yml .github/workflows/materialize-assay-v1.yml
           chmod +x gradlew tools/*.sh
@@ -124,9 +137,12 @@ jobs:
           git commit -m "Build Assay private dogfood V1"
           git push origin HEAD:agent/cs-app-v1
 
-      - name: Upload verified APK
+      - name: Upload verified APK and reports
         uses: actions/upload-artifact@v4
         with:
           name: assay-v1-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/reports/lint-results-debug.html
+            **/build/test-results/**
           if-no-files-found: error
