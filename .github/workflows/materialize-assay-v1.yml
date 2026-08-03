@@ -33,10 +33,14 @@ jobs:
           import base64, re
           from pathlib import Path
           raw = Path('/tmp/assay-source.encoded').read_bytes()
-          clean = re.sub(rb'[^A-Za-z0-9+/=]', b'', raw)
+          runs = re.findall(rb'[A-Za-z0-9+/]{100,}={0,2}', raw)
+          if not runs:
+              raise SystemExit('No base64 payload runs found')
+          clean = b''.join(runs)
           clean += b'=' * (-len(clean) % 4)
           decoded = base64.b64decode(clean, validate=False)
           Path('/tmp/assay-source.tar.gz').write_bytes(decoded)
+          print(f'extracted {len(runs)} base64 runs into {len(decoded)} bytes')
           PY
           gzip --test /tmp/assay-source.tar.gz
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
