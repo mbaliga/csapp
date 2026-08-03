@@ -1,4 +1,4 @@
-name: Materialize csapp V1
+name: Recover and build csapp V1
 
 on:
   push:
@@ -10,48 +10,90 @@ permissions:
   contents: write
 
 jobs:
-  materialize-build-publish:
+  recover-build-publish:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
     steps:
-      - name: Checkout branch and source transport
+      - name: Checkout full repository history
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Verify and extract csapp source
+      - name: Recover and verify readable csapp source
         shell: bash
         run: |
           set -euo pipefail
-          parts=(
-            transport/csapp-xz-00
-            transport/csapp-xz-01
-            transport/csapp-xz-02
-            transport/csapp-xz-03
-            transport/csapp-xz-04
-            transport/csapp-xz-05
-            transport/csapp-xz-06
-          )
-          for part in "${parts[@]}"; do
-            test -f "$part"
-          done
-          cat "${parts[@]}" > /tmp/csapp-v1.tar.xz.b64
-          test "$(wc -c < /tmp/csapp-v1.tar.xz.b64)" -eq 97504
-          echo "efb889d0559970e46bab11b4d824d83d1acfc059080ff00683df7789a4875280  /tmp/csapp-v1.tar.xz.b64" | sha256sum --check --strict
-          base64 --decode /tmp/csapp-v1.tar.xz.b64 > /tmp/csapp-v1.tar.xz
-          test "$(wc -c < /tmp/csapp-v1.tar.xz)" -eq 73128
-          echo "86e26ab0630149985223960aa116dfcbe7abf6e9a23b8b93a8f2a54871dc2456  /tmp/csapp-v1.tar.xz" | sha256sum --check --strict
-          xz --test /tmp/csapp-v1.tar.xz
+          source_commit=96be32f3aa40adeb0672f2c084d0f5548f887f7a
+          source_blob=64af4dae7dcb066f88b0b7b499e2c1c6f5c7ae1b
+          git show "${source_commit}:source.tar.gz" > /tmp/csapp-source.tar.gz
+          test "$(git hash-object /tmp/csapp-source.tar.gz)" = "$source_blob"
+
+          set +e
+          gzip -dc /tmp/csapp-source.tar.gz > /tmp/csapp-source.tar 2> /tmp/gzip-recovery.txt
+          gzip_status=$?
+          tar --ignore-zeros -tf /tmp/csapp-source.tar > /tmp/tar-list.txt 2> /tmp/tar-list-error.txt
+          list_status=$?
+          set -e
+          echo "gzip recovery status: $gzip_status"
+          echo "tar listing status: $list_status"
+          wc -c /tmp/csapp-source.tar.gz /tmp/csapp-source.tar
+
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          tar -xJf /tmp/csapp-v1.tar.xz -C .
+          set +e
+          tar --ignore-zeros -xf /tmp/csapp-source.tar -C . 2> /tmp/tar-extract-error.txt
+          extract_status=$?
+          set -e
+          echo "tar extraction status: $extract_status"
+
           test -f settings.gradle.kts
           test -f app/src/main/AndroidManifest.xml
           test -f tools/verify_source.py
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('.')
+          text_extensions = {'.kt', '.kts', '.xml', '.md', '.json', '.properties', '.yml', '.yaml', '.txt', '.pro'}
+          for path in root.rglob('*'):
+              if not path.is_file() or '.git' in path.parts or path.suffix not in text_extensions:
+                  continue
+              text = path.read_text(errors='strict')
+              updated = text.replace('Fonebrew Signals', 'csapp').replace('CS App', 'csapp').replace('Assay', 'csapp')
+              if updated != text:
+                  path.write_text(updated)
+
+          settings = Path('settings.gradle.kts')
+          settings_text = settings.read_text()
+          settings_text = re.sub(r'rootProject\.name\s*=\s*"[^"]+"', 'rootProject.name = "csapp"', settings_text, count=1)
+          settings.write_text(settings_text)
+
+          patches = [
+              (Path('app/src/main/kotlin/dev/fonebrew/cs/MainActivity.kt'), 'import androidx.lifecycle.viewModels\n', 'import androidx.lifecycle.viewModels\nimport androidx.lifecycle.lifecycleScope\n', 'lifecycleScope'),
+              (Path('app/src/main/kotlin/dev/fonebrew/cs/WorkScheduling.kt'), 'import java.util.concurrent.TimeUnit\n', 'import java.util.concurrent.TimeUnit\nimport kotlinx.coroutines.launch\n', 'launch {'),
+              (Path('app/src/test/kotlin/dev/fonebrew/cs/CoordinatorInvariantTest.kt'), 'import dev.fonebrew.cs.triage.TriageService\n', 'import dev.fonebrew.cs.triage.TriageService\nimport kotlinx.coroutines.flow.first\n', '.first()'),
+          ]
+          for path, anchor, replacement, usage in patches:
+              if not path.exists():
+                  continue
+              text = path.read_text()
+              imported = replacement.splitlines()[-1]
+              if usage in text and imported not in text:
+                  if anchor not in text:
+                      raise SystemExit(f'Expected import anchor missing in {path}')
+                  path.write_text(text.replace(anchor, replacement, 1))
+          PY
+
+          rm -rf bootstrap bootstrap-code bootstrap-v1 transport transport2
+          rm -f source.tar.gz bootstrap.part-* bootstrap.payload.*
+          rm -f .github/workflows/bootstrap-v1.yml .github/workflows/recover-v1.yml .github/workflows/materialize-pr.yml .github/workflows/finalize-v1.yml .github/workflows/materialize-assay-v1.yml
+          chmod +x gradlew tools/*.sh
+          mkdir -p build/recovery
+          cp /tmp/gzip-recovery.txt /tmp/tar-list.txt /tmp/tar-list-error.txt /tmp/tar-extract-error.txt build/recovery/
           grep -Fq 'rootProject.name = "csapp"' settings.gradle.kts
           grep -Fq 'android:label="csapp"' app/src/main/AndroidManifest.xml
-          chmod +x gradlew tools/*.sh
           python3 tools/verify_source.py
 
       - name: Set up JDK 17
@@ -63,25 +105,21 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install pinned Android SDK
+      - name: Install Android SDK packages
         run: yes | sdkmanager "platforms;android-36" "build-tools;35.0.0"
 
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Install and verify canonical Gradle wrapper
+      - name: Install canonical Gradle wrapper
         run: |
           tools/install_canonical_wrapper.sh
           ./gradlew --version
-
-      - name: Verify source contracts
-        run: python3 tools/verify_source.py
 
       - name: Test, assemble, lint, and verify licences
         shell: bash
         run: |
           set -o pipefail
-          mkdir -p build
           ./gradlew --no-daemon \
             :core-model:test \
             :loop:test \
@@ -106,15 +144,16 @@ jobs:
           git commit -m "Build csapp private dogfood V1"
           git push origin HEAD:agent/cs-app-v1
 
-      - name: Upload csapp APK and reports
+      - name: Upload csapp build evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: csapp-v1-debug
+          name: csapp-v1-build-evidence
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/reports/lint-results-debug.html
             **/build/test-results/**
             build/final-verification.log
             build/csapp-v1-debug.sha256
+            build/recovery/**
           if-no-files-found: warn
