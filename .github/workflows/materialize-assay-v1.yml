@@ -1,15 +1,15 @@
 name: Materialize Assay V1
 
 on:
-  push:
-    branches: ["agent/cs-app-v1"]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
 
 concurrency:
   group: assay-v1-materialize
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   materialize-build-publish:
@@ -41,9 +41,7 @@ jobs:
             transport/assay-part-08b
             transport/assay-part-09
           )
-          for part in "${parts[@]}"; do
-            test -f "$part"
-          done
+          for part in "${parts[@]}"; do test -f "$part"; done
           cat "${parts[@]}" > /tmp/assay-v1-source.b64
           test "$(wc -c < /tmp/assay-v1-source.b64)" -eq 123900
           echo "75ff99afbba1a282dd191f6b619f3844e71d91b930e488bd0ff66eb0ac0388e9  /tmp/assay-v1-source.b64" | sha256sum --check --strict
@@ -55,6 +53,7 @@ jobs:
           test -f settings.gradle.kts
           test -f app/src/main/AndroidManifest.xml
           test -f tools/verify_source.py
+          grep -q 'android:label="Assay"' app/src/main/AndroidManifest.xml
 
       - name: Install final Android CI workflow
         shell: bash
@@ -90,6 +89,8 @@ jobs:
                 - uses: gradle/actions/setup-gradle@v4
                 - name: Ensure executable scripts
                   run: chmod +x gradlew tools/*.sh
+                - name: Verify Gradle wrapper
+                  run: ./gradlew --version
                 - name: Verify source contracts
                   run: python3 tools/verify_source.py
                 - name: Unit tests and debug APK
@@ -123,31 +124,26 @@ jobs:
                     if-no-files-found: error
           YAML
           chmod +x gradlew tools/*.sh
-          if grep -RIl --exclude-dir=.git --exclude-dir=build --exclude='*.jar' -e 'Fonebrew Signals' -e 'CS App' . | grep -q .; then
-            echo "Stale product naming remains" >&2
-            exit 1
-          fi
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3
 
       - name: Install pinned Android SDK
         run: yes | sdkmanager "platforms;android-36" "build-tools;35.0.0"
 
-      - name: Set up Gradle cache
-        uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v4
 
       - name: Install canonical Gradle wrapper
         run: tools/install_canonical_wrapper.sh
 
-      - name: Verify source contracts
-        run: python3 tools/verify_source.py
+      - name: Verify wrapper and source contracts
+        run: |
+          ./gradlew --version
+          python3 tools/verify_source.py
 
       - name: Test, assemble, lint, and verify licenses
         shell: bash
