@@ -25,9 +25,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git fetch --no-tags origin agent/finish-csapp-v1:refs/remotes/origin/agent/finish-csapp-v1
+          SOURCE_COMMIT=3d9d0ce53d8894d3e8d2f4ddfa02409e5742b760
           for part in part-00 part-01 part-02 part-03 part-04 part-05 part-06 part-07; do
-            git show "origin/agent/finish-csapp-v1:bootstrap-v1/${part}"
+            git show "${SOURCE_COMMIT}:bootstrap-v1/${part}"
           done | base64 --decode > /tmp/assay-v1-source.tar.xz
           echo "3c74a22517f03d140c8d2487a1cf877d6a312008452483b4d95c56696d0a3845  /tmp/assay-v1-source.tar.xz" | sha256sum --check --strict
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
