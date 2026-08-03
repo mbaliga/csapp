@@ -4,6 +4,8 @@ on:
   push:
     branches: ["agent/cs-app-v1"]
     paths: [".github/workflows/materialize-assay-v1.yml"]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -135,6 +137,7 @@ jobs:
           sha256sum app/build/outputs/apk/debug/app-debug.apk | tee build/csapp-v1-debug.sha256
 
       - name: Commit readable verified source
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
