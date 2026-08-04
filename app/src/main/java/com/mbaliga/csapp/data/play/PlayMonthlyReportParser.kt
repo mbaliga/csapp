@@ -37,6 +37,10 @@ data class PlayMonthlyReportRow(
  */
 object PlayMonthlyReportParser {
 
+    // Expressed as a code point, not a literal byte-order-mark character, so this source file
+    // itself doesn't contain a raw BOM (which Android Lint flags as ByteOrderMark).
+    private const val BOM_CHAR = '\uFEFF'
+
     private val COLUMN_ALIASES = mapOf(
         "packageName" to listOf("Package Name"),
         "appVersionCode" to listOf("App Version Code"),
@@ -103,7 +107,10 @@ object PlayMonthlyReportParser {
         val currentField = StringBuilder()
         var inQuotes = false
         var i = 0
-        val normalized = text.removePrefix("﻿")
+        // Defensive: Charsets.UTF_16 already consumes the BOM while choosing byte order, but
+        // strip a leftover U+FEFF if one somehow survives decoding (escape used, not a literal
+        // BOM byte, to avoid embedding a raw byte-order-mark in this source file).
+        val normalized = text.removePrefix(BOM_CHAR.toString())
 
         fun endField() {
             currentRow.add(currentField.toString())
