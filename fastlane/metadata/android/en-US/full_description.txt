@@ -1,0 +1,26 @@
+A customer-support console for people who ship apps. It pulls in the two places
+users actually complain, Play Store reviews and GitHub issues, and groups them so
+twenty reports of one bug read as one problem instead of twenty.
+
+WHAT IT DOES
+• Ingests Play Store reviews and GitHub issues for the apps and repositories you
+  own.
+• Clusters them into incidents, so a single bug is a single item in your queue.
+• Lets you triage and reply from your phone.
+
+TWO RULES IT IS BUILT AROUND
+• **Nothing is sent to a user without you confirming it.** There is no auto-reply
+  and no scheduled send. Every outgoing message is one you read and approved.
+• **Clustering is deterministic.** Running it again on the same data produces the
+  same incidents with the same identifiers. It never quietly reshuffles your queue
+  underneath you.
+
+HISTORY THAT ACTUALLY GOES BACK
+The Play API only exposes about a week of reviews, so the app also reads the
+monthly CSV exports from Play Console to backfill older history. Your incident view
+is not limited to the last seven days.
+
+YOUR CREDENTIALS, YOUR DEVICE
+Your Play service account key and your GitHub token are stored encrypted on your
+device and are used only to talk to Google and GitHub directly. There is no server
+of ours in between, and no account to create.
