@@ -42,9 +42,12 @@ data class ManifestProjectRef(
 
 /**
  * One CSApp [Incident], flattened to the hub's `CsAppIssue` shape (INT-013). That shape has no
- * signal-level list — [Signal]s are folded into [detail] (see [IssuesManifestBuilder.buildDetail])
- * rather than dropped, since the hub schema's `additionalProperties` is closed to a named
- * `signals` property in v1 (deliberately out of scope, ratified doc §4).
+ * named `signals` property in v1 (deliberately out of scope, ratified doc §4) — [Signal]s are
+ * folded into [detail] (see [IssuesManifestBuilder.buildDetail]) rather than dropped. This is a
+ * scope choice, not a schema restriction: `additionalProperties` on `CsAppIssue` in
+ * `issues-manifest.v1.schema.json` is open (`true`), so an ad hoc `signals` field would validate
+ * if CSApp added one. CSApp deliberately stays within the ratified field list instead and folds
+ * signal detail into free text.
  */
 @Serializable
 data class ManifestIssue(
