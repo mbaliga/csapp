@@ -80,6 +80,12 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.security.crypto)
 
+    // Constellation-wide crash-recovery harness (dev.aarso:crash-recovery, single-sourced from
+    // mbaliga/Shared-Libraries-asoc — see settings.gradle.kts). Local-only: captures an
+    // uncaught crash to a private file and shows a recovery screen on next launch instead of
+    // bricking. No network dependency, nothing phoned home.
+    implementation("dev.aarso:crash-recovery:1.5.0")
+
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
 

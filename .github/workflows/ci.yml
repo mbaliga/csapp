@@ -15,6 +15,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # dev.aarso:crash-recovery is single-sourced from mbaliga/Shared-Libraries-asoc,
+          # pinned as a git submodule at ./shared-libraries and composited in via includeBuild
+          # (settings.gradle.kts). That repo is private, so actions/checkout's default
+          # GITHUB_TOKEN (scoped to this repo only) can't clone it as a submodule — auth with a
+          # fine-grained PAT instead (Contents:Read on Shared-Libraries-asoc), stored as the
+          # CORE_SUBMODULE_TOKEN secret. Same fallback pattern Android-IDE-Studio's checkout
+          # uses for its own private submodules.
+          #
+          # OWNER ACTION NEEDED: this repo does not have CORE_SUBMODULE_TOKEN set yet. Until an
+          # owner creates it (same fine-grained PAT name Android-IDE-Studio already uses,
+          # extended to cover Shared-Libraries-asoc), this step falls back to github.token,
+          # which cannot see a private repo — the submodule checkout will fail and CI will stay
+          # red on that step. That is expected and not a code regression; see this lane's report.
+          submodules: recursive
+          token: ${{ secrets.CORE_SUBMODULE_TOKEN || github.token }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -23,7 +39,12 @@ jobs:
           java-version: '17'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          # v3 AND v4 default to installing the legacy 'tools' package, which
+          # Google's repo no longer serves (sdkmanager exit 1 at SDK setup,
+          # 2026-09-15 - see core CLAUDE.md's CI caveat, third infra class).
+          packages: platform-tools
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
