@@ -251,3 +251,4 @@ CI runs unit tests, lint and a debug assemble.
 - **This app predates the constellation's spatial shell.** It uses standard Material navigation.
   Adopting `dev.aarso:cell-shell` is a candidate once the two testable apps have validated the
   pattern.
+- **Android only today.** Multi-platform ports (Ubuntu Touch, Linux, iOS/iPadOS, macOS, Windows) are planned, not built; see [PORTING-PLAN.md](PORTING-PLAN.md).
