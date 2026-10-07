@@ -383,3 +383,52 @@ Master ids are in brackets; "csapp-local" means the program has no id. Proposals
 and the import, line-count and `@Test` sweeps over all 64 `.kt` files under `app/src/{main,test}`.
 Program inputs: `Personal-Tracker/PORTING_PROGRAM.md` §0–§3, §4.1–§4.5, this repo's §5 row, §6, §7, §8, and the
 2026-10-06 reader profile of this repository.
+
+## Owner rulings and the proposed line (added 2026-10-07)
+
+Status: PLAN. Nothing here is built, run on a device, signed or submitted. The program-level plan is Personal-Tracker `PORTING_PROGRAM.md` ([PR #10](https://github.com/mbaliga/Personal-Tracker/pull/10)), which holds the owner's rulings and section 5A, the proposed port / no-port line. The cells, estimates and open questions above are this repo's original plan and are unedited. Where the owner has since answered a question, the answer is below. Section 5A is a proposal; the owner has not yet confirmed it.
+
+### Where csapp sits in the proposed line (program section 5A.3, a proposal)
+
+| Target       | Verdict | Weeks and flags |
+| ------------ | ------- | --------------- |
+| Ubuntu Touch | no-port | -               |
+| Linux        | port    | 3w              |
+| iOS/iPadOS   | no-port | -               |
+| macOS        | port    | 1w              |
+| Windows      | port    | 1w              |
+
+Key: `follows` means it ports only as far as the products that depend on it; `exists` means the program reads it as already running there, unverified (finish, verify and sign); flags: `g` gated on a prerequisite, `r` re-estimate or floor, `o` its own program, `s` scope note. The program's P4, P8, P12 and P13 gate whole columns or repos and are not flagged per cell. A port verdict counts the deliverable in the line; where this repo's plan calls a deliverable a reframe (program rule R12) it keeps that label. Tests cited in the reason: (a) the owner said it is needed there; (b) its job is really done on that OS by real users; (c) that OS is where it is sold or its audience is; it has no reason to exist if (x) its surface is absent or untouchable, (y) the capability is forbidden or impossible, or (z) the only form is a thin wrapper or a different product nobody asked for. P-numbers and OQ-numbers refer to the program plan (Personal-Tracker `PORTING_PROGRAM.md`, sections 5A.5 and 8).
+
+Reason: A developer tool, so the desktops; its audience carries the Android build and has no reason to use a phone-side click or an iPhone port. The OQ-22 ruling (an app-private file is allowed on Ubuntu Touch) removes the old key blocker, not the audience reason.
+
+### Owner rulings that apply here
+
+- **Ubuntu Touch scope and OQ-21 (2026-10-06):** "Native only, no substitutes" for Android-only products, and "No, native ports only" (Waydroid is not accepted). The program plan reads csapp as an Android-only product (that is its reading, not the owner's: OQ-21 does not name csapp, as this plan's Q14 notes), so on that reading the Waydroid option in Q14 is not accepted. The program left this plan's read-only manifest viewer cell unmarked; the proposed verdict is no-port because csapp's audience carries the Android build, not because of this ruling.
+- **OQ-17 toolchain (2026-10-06):** "B: staged pin (Recommended)": Kotlin 2.1.20 and Compose Multiplatform 1.8.2 for the first wave, 2.4.x deferred. csapp is on Kotlin 2.0.20, AGP 8.5.2 and KSP 2.0.20-1.0.25 today, so the pin is a bump for it; the ruling answers only the Kotlin and CMP part of this plan's Q9, and the Room 2.7+ and KSP/AGP minimum stays open until spike S-CS1. csapp has no includeBuild, so the PT:D-Q lockstep binds it only if it consumes F5 or F6.
+- **OQ-22 key custody (2026-10-06):** "OS keystore, weaker fallback shown (Recommended)": Keychain, Credential Manager (DPAPI), Secret Service, a passphrase-protected file or an app-private file on Ubuntu Touch, each with the weaker guarantee stated in the UI. Whether this ruling counts as the repo-local owner approval this plan asks for is for this repo to record; nothing in this section ratifies a repo decision.
+- **OQ-31 Mac (2026-10-06 and 2026-10-07):** "Buy a Mac", and on 2026-10-07 an Apple-silicon Mac mini, not yet bought. The proposed line has no iOS port for csapp; its macOS cell is a jpackage dmg (Developer ID, OQ-3), so only the Mac statement applies.
+- **OQ-20 CI (2026-10-06):** "Linux-only CI when private (Recommended)": this repo is public, so the ruling does not limit its macOS and Windows lanes; going private would stop them. Actions artifact storage is still exhausted (program rule R6).
+- **OQ-5 hardware (2026-10-06):** the owner's answer changes which of their other machines can serve as device gates, so a gate this plan names on specific hardware may be moved or dropped. Which machine carries which device gate is not decided (OQ-33).
+- **Directives (2026-10-06):** "Draft amendments for approval": program directives I-1 to I-12 and rules R1 to R12 are unchanged; PROPOSED-1 to PROPOSED-4 in Personal-Tracker `DECISIONS.md` are drafts awaiting the owner.
+
+### Prerequisites and open questions that touch this repo (program sections 5A.5 and 8)
+
+Prerequisites (program-level; not costed here):
+
+- program P8: An Apple-silicon Mac (OQ-31: a Mac mini chosen on 2026-10-07, not yet bought)
+
+Owner questions in the program register that concern this repo (status as of 2026-10-07):
+
+- OQ-3 (open): Signing custody
+- OQ-4 (open): Channels and store compatibility
+- OQ-5 (ruled): Hardware stance
+- OQ-17 (ruled): Toolchain pins: the pin is ruled; the "Also" approvals (converting shared modules to kotlin("multiplatform"), asom's no-KMP rule staying asom-local) are unanswered
+- OQ-20 (ruled): CI minutes, storage and repo visibility
+- OQ-21 (ruled): Waydroid as the Ubuntu Touch answer
+- OQ-22 (ruled): Secret custody per platform
+- OQ-29 (open): Hyle-consumer status
+- OQ-31 (ruled): CI for App Store builds; which Mac
+- OQ-33 (open): Hardware details still open
+
+When the owner confirms or changes the line, this repo's original cells above stay as the engineering detail; only the verdicts and re-costs in program section 5A change.
