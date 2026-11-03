@@ -62,6 +62,11 @@ class SettingsViewModel(
         _uiState.value = _uiState.value.copy(hasPlayKey = true, statusMessage = "Play service-account key saved (encrypted)")
     }
 
+    fun clearCredentials() {
+        credentialStore.clearAll()
+        _uiState.value = _uiState.value.copy(hasGithubToken = false, hasPlayKey = false, statusMessage = "All credentials cleared")
+    }
+
     fun pollGithubNow() {
         val owner = settingsStore.githubOwner
         val repo = settingsStore.githubRepo

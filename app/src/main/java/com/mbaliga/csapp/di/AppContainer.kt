@@ -3,7 +3,7 @@ package com.mbaliga.csapp.di
 import android.content.Context
 import androidx.room.Room
 import com.mbaliga.csapp.data.credentials.CredentialStore
-import com.mbaliga.csapp.data.credentials.EncryptedCredentialStore
+import com.mbaliga.csapp.data.credentials.KeystoreCredentialStore
 import com.mbaliga.csapp.data.db.AppDatabase
 import com.mbaliga.csapp.data.export.IssuesManifestExporter
 import com.mbaliga.csapp.data.github.GitHubIssuePollRepository
@@ -26,7 +26,7 @@ import okhttp3.OkHttpClient
 class AppContainer(context: Context) {
     private val appContext = context.applicationContext
 
-    val credentialStore: CredentialStore by lazy { EncryptedCredentialStore(appContext) }
+    val credentialStore: CredentialStore by lazy { KeystoreCredentialStore(appContext) }
 
     val settingsStore: AppSettingsStore by lazy { AppSettingsStore(appContext) }
 

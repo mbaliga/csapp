@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "com.mbaliga.csapp"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.mbaliga.csapp"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
 
@@ -78,7 +78,6 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.androidx.work.runtime.ktx)
-    implementation(libs.androidx.security.crypto)
 
     // Constellation-wide crash-recovery harness (dev.aarso:crash-recovery, single-sourced from
     // mbaliga/Shared-Libraries-asoc — see settings.gradle.kts). Local-only: captures an
@@ -100,4 +99,8 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }

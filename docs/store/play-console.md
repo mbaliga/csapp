@@ -13,11 +13,7 @@
 
 ## ⛔ Read this before anything else
 
-**This app has never compiled.** `main` carries only a LICENSE and docs. Every
-feature branch stores its source as split base64 or tar "transport" blobs that have
-never once successfully reassembled, across 45+ same-day fix commits
-(`CONSTELLATION.md`, D-W). Zero lines of its real code have ever been built or read
-as source.
+**Status:** V1 compiles and is unit-tested (see `docs/STATUS.md`). Nothing below has been submitted to Play; on-device behaviour is owner-verified only.
 
 There is an open owner decision: **recover the blobs, or discard and rebuild clean**
 from the existing `cs-app-v1-build-plan.md` spec. Until that lands there is nothing

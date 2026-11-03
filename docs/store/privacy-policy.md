@@ -1,6 +1,6 @@
 # Privacy Policy — CS App
 
-> **Draft.** The app has never compiled (see `docs/store/play-console.md`), so this
+> **Draft.** This
 > policy describes the intended design and must be re-checked against the real
 > implementation before it is published anywhere.
 >

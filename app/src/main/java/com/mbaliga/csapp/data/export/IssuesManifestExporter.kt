@@ -4,6 +4,9 @@ import android.content.ContentResolver
 import android.net.Uri
 import com.mbaliga.csapp.domain.model.Incident
 import com.mbaliga.csapp.domain.model.Signal
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Writes `issues-manifest.json` to a destination the user explicitly picked via the Storage
@@ -20,13 +23,15 @@ class IssuesManifestExporter(
     private val contentResolver: ContentResolver,
     private val producerVersion: String,
     private val projectExternalIdProvider: () -> String,
+    private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
 
-    fun export(
+    suspend fun export(
         destination: Uri,
         incidents: List<Incident>,
         signalsByIncidentId: Map<String, List<Signal>>,
     ) {
+        withContext(io) {
         val manifest = IssuesManifestBuilder.build(
             incidents = incidents,
             signalsByIncidentId = signalsByIncidentId,
@@ -37,6 +42,7 @@ class IssuesManifestExporter(
         val stream = contentResolver.openOutputStream(destination, "wt")
             ?: throw IllegalStateException("Unable to open output stream for $destination")
         stream.use { it.write(jsonText.toByteArray(Charsets.UTF_8)) }
+        }
     }
 
     companion object {

@@ -18,7 +18,7 @@ import com.mbaliga.csapp.data.db.entities.SignalEntity
         PlayCheckpointEntity::class,
     ],
     version = 1,
-    exportSchema = false,
+    exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun signalDao(): SignalDao

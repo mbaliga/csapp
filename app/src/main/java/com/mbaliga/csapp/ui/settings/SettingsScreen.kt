@@ -87,11 +87,15 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 label = { Text(if (state.hasPlayKey) "Service-account key JSON (saved — paste to replace)" else "Service-account key JSON") },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 minLines = 3,
+                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
             )
             Button(
                 onClick = { if (serviceAccountJson.isNotBlank()) viewModel.savePlayServiceAccountKey(serviceAccountJson) },
                 modifier = Modifier.padding(top = 4.dp),
             ) { Text("Save key (encrypted)") }
+            Button(onClick = { viewModel.clearCredentials() }, modifier = Modifier.padding(top = 4.dp)) {
+                Text("Clear all credentials")
+            }
             Button(onClick = { viewModel.pollPlayNow() }, modifier = Modifier.padding(top = 4.dp), enabled = !state.isPolling) {
                 Text("Poll Play now")
             }

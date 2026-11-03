@@ -6,6 +6,11 @@ import com.mbaliga.csapp.domain.model.Signal
 import com.mbaliga.csapp.domain.model.SignalType
 import com.mbaliga.csapp.domain.repository.SignalRepository
 import java.time.Instant
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** Orchestrates one polling pass for a single GitHub repo's issues, end to end. */
 class GitHubIssuePollRepository(
@@ -13,6 +18,7 @@ class GitHubIssuePollRepository(
     private val checkpointDao: CheckpointDao,
     private val signalRepository: SignalRepository,
     private val now: () -> Long = { System.currentTimeMillis() },
+    private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
     suspend fun pollRepo(owner: String, repo: String) {
         val repoFullName = "$owner/$repo"
@@ -23,7 +29,7 @@ class GitHubIssuePollRepository(
             lastSeenIssueNumber = existingCheckpoint?.lastSeenIssueNumber ?: 0,
         )
 
-        val result = client.pollIssues(owner, repo, checkpoint)
+        val result = withContext(io) { client.pollIssues(owner, repo, checkpoint) }
         if (result.notModified) return
 
         for (issue in result.issues) {
@@ -55,7 +61,10 @@ class GitHubIssuePollRepository(
             createdAt = createdAtMillis,
             sourceUpdatedAt = updatedAtMillis,
             ingestedAt = now(),
-            metadataJson = """{"htmlUrl":"$htmlUrl","state":"$state"}""",
+            metadataJson = buildJsonObject {
+                put("htmlUrl", htmlUrl)
+                put("state", state)
+            }.toString(),
         )
     }
 }

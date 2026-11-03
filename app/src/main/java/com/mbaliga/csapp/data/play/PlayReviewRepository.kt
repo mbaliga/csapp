@@ -7,7 +7,12 @@ import com.mbaliga.csapp.domain.model.Signal
 import com.mbaliga.csapp.domain.model.SignalType
 import com.mbaliga.csapp.domain.repository.SignalRepository
 import java.io.InputStream
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.security.MessageDigest
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /**
  * Orchestrates Play review ingestion: near-real-time polling via [PlayReviewsApiClient], plus
@@ -22,6 +27,7 @@ class PlayReviewRepository(
     private val checkpointDao: CheckpointDao,
     private val signalRepository: SignalRepository,
     private val now: () -> Long = { System.currentTimeMillis() },
+    private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
     /** Polls the recent-reviews API (last ~1 week) for [packageName]. */
     suspend fun pollRecentReviews(packageName: String) {
@@ -29,7 +35,7 @@ class PlayReviewRepository(
             ?: throw IllegalStateException("No Play service-account key configured")
         val key = auth.parseKey(keyJson)
 
-        val reviews = apiClient.fetchRecentReviews(packageName, key)
+        val reviews = withContext(io) { apiClient.fetchRecentReviews(packageName, key) }
         for (review in reviews) {
             val userComment = review.comments.firstNotNullOfOrNull { it.userComment } ?: continue
             val signal = review.toSignal(packageName, userComment)
@@ -91,7 +97,7 @@ class PlayReviewRepository(
 
         signalRepository.markReplyConfirmedSending(sourceKey)
         try {
-            apiClient.sendReply(packageName, reviewId, replyText, key)
+            withContext(io) { apiClient.sendReply(packageName, reviewId, replyText, key) }
             signalRepository.markReplySent(sourceKey, now())
         } catch (e: Exception) {
             signalRepository.markReplyFailed(sourceKey)
@@ -119,7 +125,10 @@ class PlayReviewRepository(
             createdAt = submitMillis,
             sourceUpdatedAt = submitMillis,
             ingestedAt = now(),
-            metadataJson = """{"device":"${userComment.device.orEmpty()}","appVersionName":"${userComment.appVersionName.orEmpty()}"}""",
+            metadataJson = buildJsonObject {
+                put("device", userComment.device.orEmpty())
+                put("appVersionName", userComment.appVersionName.orEmpty())
+            }.toString(),
         )
     }
 
@@ -136,7 +145,11 @@ class PlayReviewRepository(
             createdAt = submitMillis,
             sourceUpdatedAt = lastUpdateMillisSinceEpoch ?: submitMillis,
             ingestedAt = now(),
-            metadataJson = """{"device":"${device.orEmpty()}","appVersionName":"${appVersionName.orEmpty()}","source":"monthly-backfill"}""",
+            metadataJson = buildJsonObject {
+                put("device", device.orEmpty())
+                put("appVersionName", appVersionName.orEmpty())
+                put("source", "monthly-backfill")
+            }.toString(),
         )
     }
 
