@@ -1,6 +1,7 @@
 package com.mbaliga.csapp.data.export
 
 import com.mbaliga.csapp.domain.model.Incident
+import com.mbaliga.csapp.domain.model.IncidentStatus
 import com.mbaliga.csapp.domain.model.Severity
 import com.mbaliga.csapp.domain.model.Signal
 import java.time.Instant
@@ -81,20 +82,50 @@ object IssuesManifestBuilder {
         signalsByIncidentId: Map<String, List<Signal>>,
         producerVersion: String,
         projectExternalId: String,
-        nowMillis: Long = System.currentTimeMillis(),
-        exportId: String = UUID.randomUUID().toString(),
+        nowMillis: Long? = null,
+        exportId: String? = null,
+        projectCreatedAt: Long = 0L,
     ): IssuesManifestV1 {
-        val issues = incidents
+        // DISMISSED and MERGED incidents are not exported (a merge survivor carries the signals).
+        val exported = incidents.filter { it.status != IncidentStatus.DISMISSED && it.status != IncidentStatus.MERGED }
+        val issues = exported
             .sortedBy { it.id }
             .map { incident -> toManifestIssue(incident, signalsByIncidentId[incident.id].orEmpty()) }
 
-        return IssuesManifestV1(
-            exportId = exportId,
-            exportedAt = Instant.ofEpochMilli(nowMillis).toString(),
+        // Deterministic bytes: exportedAt is derived from the data, never the wall clock, so an
+        // unchanged project re-exports byte-identically (Core detects IMPORT_DUPLICATE_SNAPSHOT).
+        val exportedAt = nowMillis ?: exported.maxOfOrNull { it.updatedAt } ?: projectCreatedAt
+        val withoutId = IssuesManifestV1(
+            exportId = "",
+            exportedAt = Instant.ofEpochMilli(exportedAt).toString(),
             producer = ManifestProducerRef(app = PRODUCER_APP, version = producerVersion),
             projectRef = ManifestProjectRef(externalId = projectExternalId),
             issues = issues,
         )
+        return withoutId.copy(exportId = exportId ?: computeExportId(withoutId))
+    }
+
+    /** sha256 over the canonical JSON of the manifest with an empty exportId. */
+    fun computeExportId(manifestWithoutId: IssuesManifestV1): String {
+        val canonical = jsonFormat.encodeToString(IssuesManifestV1.serializer(), manifestWithoutId.copy(exportId = ""))
+        return java.security.MessageDigest.getInstance("SHA-256").digest(canonical.toByteArray(Charsets.UTF_8))
+            .joinToString("") { "%02x".format(it) }
+    }
+
+    /** Light invariant check run at export time (full JSON-Schema validation runs in CI tests). */
+    fun validate(m: IssuesManifestV1) {
+        require(Regex("""^1\.\d+\.\d+$""").matches(m.schemaVersion)) { "bad schemaVersion" }
+        require(m.exportId.isNotBlank()) { "exportId empty" }
+        require(m.projectRef.externalId.isNotBlank()) { "projectRef.externalId empty" }
+        Instant.parse(m.exportedAt)
+        val sev = setOf("SEV1", "SEV2", "SEV3", "SEV4")
+        val ids = HashSet<String>()
+        for (i in m.issues) {
+            require(i.id.isNotBlank() && ids.add(i.id)) { "issue id missing or duplicated: ${i.id}" }
+            require(i.title.isNotBlank() && i.reporterRef.isNotBlank()) { "issue ${i.id} missing title/reporterRef" }
+            require(i.severity in sev) { "issue ${i.id} bad severity" }
+            Instant.parse(i.occurredAt); Instant.parse(i.updatedAt)
+        }
     }
 
     private fun toManifestIssue(incident: Incident, signals: List<Signal>): ManifestIssue {
@@ -107,7 +138,7 @@ object IssuesManifestBuilder {
             reporterRef = resolveReporterRef(incident, sortedSignals),
             occurredAt = Instant.ofEpochMilli(incident.createdAt).toString(),
             updatedAt = Instant.ofEpochMilli(incident.updatedAt).toString(),
-            sourceRevision = null,
+            sourceRevision = sortedSignals.maxOfOrNull { it.sourceUpdatedAt }?.let { Instant.ofEpochMilli(it).toString() },
             status = incident.status.name.lowercase(),
         )
     }

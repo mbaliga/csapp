@@ -27,6 +27,8 @@ fun SignalEntity.toDomain(): Signal = Signal(
     replyDraft = replyDraft,
     repliedAt = repliedAt,
     metadataJson = metadataJson,
+    projectId = projectId,
+    sentReplyText = sentReplyText,
 )
 
 fun Signal.toEntity(): SignalEntity = SignalEntity(
@@ -47,6 +49,8 @@ fun Signal.toEntity(): SignalEntity = SignalEntity(
     replyDraft = replyDraft,
     repliedAt = repliedAt,
     metadataJson = metadataJson,
+    projectId = projectId,
+    sentReplyText = sentReplyText,
 )
 
 fun IncidentEntity.toDomain(): Incident = Incident(
@@ -60,6 +64,7 @@ fun IncidentEntity.toDomain(): Incident = Incident(
     mergedInto = mergedInto,
     createdAt = createdAt,
     updatedAt = updatedAt,
+    projectId = projectId,
 )
 
 fun Incident.toEntity(): IncidentEntity = IncidentEntity(
@@ -73,4 +78,5 @@ fun Incident.toEntity(): IncidentEntity = IncidentEntity(
     mergedInto = mergedInto,
     createdAt = createdAt,
     updatedAt = updatedAt,
+    projectId = projectId,
 )

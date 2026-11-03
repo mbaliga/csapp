@@ -32,6 +32,22 @@ class MemCreds : CredentialStore {
     override fun clearAll() = m.clear()
 }
 
+class FakeGovernanceDao : com.mbaliga.csapp.data.db.dao.GovernanceDao {
+    val logs = mutableListOf<com.mbaliga.csapp.data.db.entities.ReplyLogEntity>()
+    val quotas = mutableMapOf<String, com.mbaliga.csapp.data.db.entities.QuotaEntity>()
+    val suggestions = mutableMapOf<String, com.mbaliga.csapp.data.db.entities.SuggestionEntity>()
+    override suspend fun insertReplyLog(entry: com.mbaliga.csapp.data.db.entities.ReplyLogEntity): Long { logs += entry; return logs.size.toLong() }
+    override fun observeReplyLog(key: String) = kotlinx.coroutines.flow.flowOf(logs.filter { it.signalSourceKey == key })
+    override suspend fun allReplyLog() = logs.toList()
+    override suspend fun upsertQuota(q: com.mbaliga.csapp.data.db.entities.QuotaEntity) { quotas[q.bucketKey] = q }
+    override suspend fun findQuota(key: String) = quotas[key]
+    override suspend fun upsertSuggestion(s: com.mbaliga.csapp.data.db.entities.SuggestionEntity) { suggestions[s.id] = s }
+    override suspend fun findSuggestion(id: String) = suggestions[id]
+    override fun observeSuggestionsFor(targetId: String) = kotlinx.coroutines.flow.flowOf(suggestions.values.filter { it.targetId == targetId })
+    override fun observePending() = kotlinx.coroutines.flow.flowOf(suggestions.values.filter { it.state == "PENDING" })
+    override suspend fun allSuggestions() = suggestions.values.toList()
+}
+
 class FakeCheckpointDao : CheckpointDao {
     var play: PlayCheckpointEntity? = null
     var gh: GithubCheckpointEntity? = null
@@ -56,7 +72,7 @@ class PlayReviewRepositorySendTest {
             putPlayServiceAccountKeyJson("""{"client_email":"sa@x","private_key":"pem"}""")
         }
         val api = PlayReviewsApiClient(OkHttpClient(), FakePlayAuth(), server.url("/").toString().trimEnd('/'))
-        repo = PlayReviewRepository(api, FakePlayAuth(), creds, FakeCheckpointDao(), signals, io = Dispatchers.Unconfined)
+        repo = PlayReviewRepository(api, FakePlayAuth(), creds, FakeCheckpointDao(), signals, FakeGovernanceDao(), io = Dispatchers.Unconfined)
         signals.ingestOrUpdate(Signal(sourceKey = key, type = SignalType.PLAY_REVIEW, title = "1★", body = "bad", authorName = "A", rating = 1, createdAt = 1000, sourceUpdatedAt = 1000, ingestedAt = 1000))
     }
 

@@ -21,4 +21,5 @@ data class Incident(
     val mergedInto: String? = null,
     val createdAt: Long,
     val updatedAt: Long,
+    val projectId: String = DEFAULT_PROJECT_ID,
 )

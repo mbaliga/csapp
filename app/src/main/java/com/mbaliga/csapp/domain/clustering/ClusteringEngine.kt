@@ -39,7 +39,10 @@ class ClusteringEngine(
         unclusteredSignals: List<Signal>,
         openIncidents: List<Incident>,
         signalsByIncidentId: Map<String, List<Signal>>,
+        projectId: String = com.mbaliga.csapp.domain.model.DEFAULT_PROJECT_ID,
     ): ClusteringResult {
+        // The legacy default project keeps its original (slug-less) ids so existing ids never change.
+        val projectSlug = projectId.takeIf { it != com.mbaliga.csapp.domain.model.DEFAULT_PROJECT_ID }
         val assignments = mutableMapOf<String, String>()
         val stillUnassigned = mutableListOf<Signal>()
 
@@ -94,7 +97,7 @@ class ClusteringEngine(
             val members = memberIndices.map { ordered[it] }
             val anchorCandidates = members.map { it.sourceKey to it.createdAt }
             val anchorKey = AnchorIdGenerator.chooseAnchor(anchorCandidates)
-            val incidentId = AnchorIdGenerator.fromAnchorKey(anchorKey)
+            val incidentId = AnchorIdGenerator.fromAnchorKey(anchorKey, projectSlug)
             val anchorSignal = members.first { it.sourceKey == anchorKey }
 
             for (member in members) {
@@ -111,6 +114,7 @@ class ClusteringEngine(
                     isManual = false,
                     createdAt = currentTime,
                     updatedAt = currentTime,
+                    projectId = projectId,
                 )
             )
         }

@@ -25,6 +25,6 @@ class CsAppApplication : Application() {
         } catch (e: Throwable) {
             CrashRecovery.captureInitError(this, appLabel = APP_LABEL, e)
         }
-        PollScheduler.scheduleIfNotAlreadyScheduled(this)
+        if (::container.isInitialized) PollScheduler.schedule(this, container.settingsStore.pollIntervalMinutes)
     }
 }

@@ -9,77 +9,66 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.mbaliga.csapp.di.AppContainer
-import com.mbaliga.csapp.ui.CsAppViewModelFactory
-import com.mbaliga.csapp.ui.dashboard.DashboardScreen
-import com.mbaliga.csapp.ui.dashboard.DashboardViewModel
-import com.mbaliga.csapp.ui.export.ExportScreen
-import com.mbaliga.csapp.ui.export.ExportViewModel
+import com.mbaliga.csapp.ui.dashboard.HomeScreen
+import com.mbaliga.csapp.ui.dashboard.HomeViewModel
 import com.mbaliga.csapp.ui.incident.IncidentDetailScreen
 import com.mbaliga.csapp.ui.incident.IncidentDetailViewModel
-import com.mbaliga.csapp.ui.incident.ManualIncidentScreen
-import com.mbaliga.csapp.ui.incident.ManualIncidentViewModel
+import com.mbaliga.csapp.ui.incident.ManualSignalScreen
+import com.mbaliga.csapp.ui.projects.ProjectDetailScreen
+import com.mbaliga.csapp.ui.projects.ProjectDetailViewModel
+import com.mbaliga.csapp.ui.projects.ProjectsScreen
+import com.mbaliga.csapp.ui.projects.ProjectsViewModel
 import com.mbaliga.csapp.ui.reply.ReplyScreen
 import com.mbaliga.csapp.ui.reply.ReplyViewModel
 import com.mbaliga.csapp.ui.settings.SettingsScreen
 import com.mbaliga.csapp.ui.settings.SettingsViewModel
+import com.mbaliga.csapp.ui.vmFactory
 
 @Composable
-fun CsAppNavHost(container: AppContainer, navController: NavHostController = rememberNavController()) {
-    val factory = CsAppViewModelFactory(container)
-
-    NavHost(navController = navController, startDestination = Destinations.DASHBOARD) {
-        composable(Destinations.DASHBOARD) {
-            val viewModel: DashboardViewModel = viewModel(factory = factory)
-            DashboardScreen(
-                viewModel = viewModel,
-                onOpenIncident = { navController.navigate(Destinations.incidentDetail(it)) },
-                onCreateManual = { navController.navigate(Destinations.MANUAL_INCIDENT) },
-                onOpenSettings = { navController.navigate(Destinations.SETTINGS) },
-                onOpenExport = { navController.navigate(Destinations.EXPORT) },
+fun CsAppNavHost(container: AppContainer, nav: NavHostController = rememberNavController()) {
+    NavHost(navController = nav, startDestination = Destinations.HOME) {
+        composable(Destinations.HOME) {
+            val vm: HomeViewModel = viewModel(factory = vmFactory { HomeViewModel(container) })
+            HomeScreen(
+                vm,
+                onOpenIncident = { nav.navigate(Destinations.incidentDetail(it)) },
+                onNewSignal = { nav.navigate(Destinations.NEW_SIGNAL) },
+                onOpenProjects = { nav.navigate(Destinations.PROJECTS) },
+                onOpenSettings = { nav.navigate(Destinations.SETTINGS) },
             )
         }
-        composable(
-            Destinations.INCIDENT_DETAIL,
-            arguments = listOf(navArgument("incidentId") { type = NavType.StringType }),
-        ) { backStackEntry ->
-            val incidentId = backStackEntry.arguments?.getString("incidentId").orEmpty()
-            val viewModel: IncidentDetailViewModel = viewModel(
-                factory = IncidentDetailViewModel.Factory(incidentId, container.incidentRepository, container.signalRepository),
-            )
+        composable(Destinations.INCIDENT_DETAIL, arguments = listOf(navArgument("incidentId") { type = NavType.StringType })) { e ->
+            val id = e.arguments?.getString("incidentId").orEmpty()
+            val vm: IncidentDetailViewModel = viewModel(key = "inc-$id", factory = vmFactory { IncidentDetailViewModel(id, container) })
             IncidentDetailScreen(
-                viewModel = viewModel,
-                onBack = { navController.popBackStack() },
-                onOpenReply = { navController.navigate(Destinations.reply(it)) },
+                vm, onBack = { nav.popBackStack() },
+                onOpenReply = { nav.navigate(Destinations.reply(it)) },
+                onOpenIncident = { nav.navigate(Destinations.incidentDetail(it)) },
             )
         }
-        composable(Destinations.MANUAL_INCIDENT) {
-            val viewModel: ManualIncidentViewModel = viewModel(factory = factory)
-            ManualIncidentScreen(
-                viewModel = viewModel,
-                onBack = { navController.popBackStack() },
-                onCreated = { id ->
-                    navController.popBackStack()
-                    navController.navigate(Destinations.incidentDetail(id))
-                },
-            )
+        composable(Destinations.NEW_SIGNAL) {
+            ManualSignalScreen(container, onBack = { nav.popBackStack() }, onCreated = { id ->
+                nav.popBackStack()
+                if (id != null) nav.navigate(Destinations.incidentDetail(id))
+            })
         }
-        composable(
-            Destinations.REPLY,
-            arguments = listOf(navArgument("sourceKey") { type = NavType.StringType }),
-        ) { backStackEntry ->
-            val sourceKey = android.net.Uri.decode(backStackEntry.arguments?.getString("sourceKey").orEmpty())
-            val viewModel: ReplyViewModel = viewModel(
-                factory = ReplyViewModel.Factory(sourceKey, container.signalRepository, container.playReviewRepository),
-            )
-            ReplyScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
+        composable(Destinations.REPLY, arguments = listOf(navArgument("sourceKey") { type = NavType.StringType })) { e ->
+            val key = android.net.Uri.decode(e.arguments?.getString("sourceKey").orEmpty())
+            val vm: ReplyViewModel = viewModel(key = "reply-$key", factory = vmFactory { ReplyViewModel(key, container) })
+            ReplyScreen(vm, onBack = { nav.popBackStack() })
         }
         composable(Destinations.SETTINGS) {
-            val viewModel: SettingsViewModel = viewModel(factory = factory)
-            SettingsScreen(viewModel = viewModel)
+            val vm: SettingsViewModel = viewModel(factory = vmFactory { SettingsViewModel(container) })
+            SettingsScreen(vm, onBack = { nav.popBackStack() })
         }
-        composable(Destinations.EXPORT) {
-            val viewModel: ExportViewModel = viewModel(factory = factory)
-            ExportScreen(viewModel = viewModel, exporter = container.issuesManifestExporter)
+        composable(Destinations.PROJECTS) {
+            val vm: ProjectsViewModel = viewModel(factory = vmFactory { ProjectsViewModel(container) })
+            ProjectsScreen(vm, onBack = { nav.popBackStack() }, onOpen = { nav.navigate(Destinations.project(it)) })
+        }
+        composable(Destinations.PROJECT_DETAIL, arguments = listOf(navArgument("projectId") { type = NavType.StringType })) { e ->
+            val id = android.net.Uri.decode(e.arguments?.getString("projectId").orEmpty())
+            val vm: ProjectDetailViewModel = viewModel(key = "proj-$id", factory = vmFactory { ProjectDetailViewModel(id, container) })
+            ProjectDetailScreen(vm, onBack = { nav.popBackStack() })
         }
     }
 }

@@ -27,4 +27,6 @@ data class Signal(
     val replyDraft: String? = null,
     val repliedAt: Long? = null,
     val metadataJson: String? = null,
+    val projectId: String = DEFAULT_PROJECT_ID,
+    val sentReplyText: String? = null,
 )

@@ -2,7 +2,10 @@ package com.mbaliga.csapp.data.play
 
 import com.mbaliga.csapp.data.credentials.CredentialStore
 import com.mbaliga.csapp.data.db.dao.CheckpointDao
+import com.mbaliga.csapp.data.db.dao.GovernanceDao
+import com.mbaliga.csapp.data.db.entities.ReplyLogEntity
 import com.mbaliga.csapp.data.db.entities.PlayCheckpointEntity
+import com.mbaliga.csapp.domain.model.DEFAULT_PROJECT_ID
 import com.mbaliga.csapp.domain.model.Signal
 import com.mbaliga.csapp.domain.model.SignalType
 import com.mbaliga.csapp.domain.repository.SignalRepository
@@ -26,20 +29,37 @@ class PlayReviewRepository(
     private val credentialStore: CredentialStore,
     private val checkpointDao: CheckpointDao,
     private val signalRepository: SignalRepository,
+    private val governance: GovernanceDao,
     private val now: () -> Long = { System.currentTimeMillis() },
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
     /** Polls the recent-reviews API (last ~1 week) for [packageName]. */
-    suspend fun pollRecentReviews(packageName: String) {
+    private val quota = QuotaGuard(governance, now)
+
+    suspend fun pollRecentReviews(packageName: String, projectId: String = DEFAULT_PROJECT_ID) {
         val keyJson = credentialStore.getPlayServiceAccountKeyJson()
             ?: throw IllegalStateException("No Play service-account key configured")
         val key = auth.parseKey(keyJson)
 
+        quota.acquireGet(packageName)
+        val lastSeen = checkpointDao.findPlayCheckpoint(packageName)?.lastSeenReviewSubmitMillis ?: 0L
         val reviews = withContext(io) { apiClient.fetchRecentReviews(packageName, key) }
         for (review in reviews) {
             val userComment = review.comments.firstNotNullOfOrNull { it.userComment } ?: continue
-            val signal = review.toSignal(packageName, userComment)
+            val developerComment = review.comments.firstNotNullOfOrNull { it.developerComment }
+            val modified = userComment.lastModified?.toEpochMillis() ?: Long.MAX_VALUE
+            // Checkpoint skip: already-seen, unchanged reviews with no developer reply need no work.
+            // (The API's one-week window overlaps the checkpoint on purpose, as a safety net.)
+            if (modified <= lastSeen && developerComment == null) continue
+            val signal = review.toSignal(packageName, userComment, projectId)
             signalRepository.ingestOrUpdate(signal)
+            // Replies made outside the app (Play Console) show up here.
+            if (developerComment != null && developerComment.text.isNotBlank()) {
+                signalRepository.recordExistingReply(
+                    signal.sourceKey, developerComment.text,
+                    developerComment.lastModified?.toEpochMillis() ?: now(),
+                )
+            }
         }
 
         checkpointDao.upsertPlayCheckpoint(
@@ -61,10 +81,10 @@ class PlayReviewRepository(
      * cannot be replied to via the API (no reviewId), only viewed/clustered - see
      * [Signal.sourceKey] prefix `play-backfill:`.
      */
-    suspend fun backfillFromMonthlyReport(input: InputStream, reportMonth: String) {
+    suspend fun backfillFromMonthlyReport(input: InputStream, reportMonth: String, projectId: String = DEFAULT_PROJECT_ID) {
         val rows = PlayMonthlyReportParser.parse(input)
         for (row in rows) {
-            val signal = row.toSignal()
+            val signal = row.toSignal().copy(projectId = projectId)
             signalRepository.ingestOrUpdate(signal)
         }
         val packageName = rows.firstOrNull()?.packageName ?: return
@@ -88,6 +108,10 @@ class PlayReviewRepository(
      *   real `reviewId` to reply to (see [backfillFromMonthlyReport]).
      */
     suspend fun sendConfirmedReply(sourceKey: String, replyText: String) {
+        if (replyText.isBlank()) throw ReplyRejectedException("Reply is empty")
+        if (replyText.length > MAX_REPLY_CHARS) {
+            throw ReplyRejectedException("Reply is ${replyText.length} characters; Play allows at most $MAX_REPLY_CHARS")
+        }
         val reviewId = extractLiveReviewId(sourceKey)
             ?: throw IllegalArgumentException("Cannot reply to a backfill-sourced or malformed signal: $sourceKey")
         val packageName = extractPackageName(sourceKey)
@@ -95,12 +119,20 @@ class PlayReviewRepository(
             ?: throw IllegalStateException("No Play service-account key configured")
         val key = auth.parseKey(keyJson)
 
+        quota.acquirePost(packageName) // blocks with a message; before any state change or log entry
         signalRepository.markReplyConfirmedSending(sourceKey)
         try {
             withContext(io) { apiClient.sendReply(packageName, reviewId, replyText, key) }
-            signalRepository.markReplySent(sourceKey, now())
+            signalRepository.markReplySent(sourceKey, now(), replyText)
+            governance.insertReplyLog(ReplyLogEntity(signalSourceKey = sourceKey, textSent = replyText, sentAt = now(), outcome = "SENT", httpStatus = 200))
         } catch (e: Exception) {
             signalRepository.markReplyFailed(sourceKey)
+            governance.insertReplyLog(
+                ReplyLogEntity(
+                    signalSourceKey = sourceKey, textSent = replyText, sentAt = now(), outcome = "FAILED",
+                    httpStatus = (e as? PlayApiException)?.httpStatus,
+                )
+            )
             throw e
         }
     }
@@ -113,7 +145,7 @@ class PlayReviewRepository(
 
     private fun extractPackageName(sourceKey: String): String = sourceKey.split(":").getOrElse(1) { "" }
 
-    private fun PlayReviewDto.toSignal(packageName: String, userComment: PlayUserCommentDto): Signal {
+    private fun PlayReviewDto.toSignal(packageName: String, userComment: PlayUserCommentDto, projectId: String): Signal {
         val submitMillis = userComment.lastModified?.toEpochMillis() ?: now()
         return Signal(
             sourceKey = "play:$packageName:$reviewId",
@@ -128,7 +160,9 @@ class PlayReviewRepository(
             metadataJson = buildJsonObject {
                 put("device", userComment.device.orEmpty())
                 put("appVersionName", userComment.appVersionName.orEmpty())
+                put("lang", userComment.reviewerLanguage.orEmpty())
             }.toString(),
+            projectId = projectId,
         )
     }
 
@@ -156,4 +190,8 @@ class PlayReviewRepository(
     private fun sha256(text: String): String =
         MessageDigest.getInstance("SHA-256").digest(text.toByteArray(Charsets.UTF_8))
             .joinToString("") { "%02x".format(it) }
+
+    companion object {
+        const val MAX_REPLY_CHARS = 350
+    }
 }

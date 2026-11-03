@@ -137,13 +137,15 @@ class IssuesManifestBuilderTest {
     }
 
     @Test
-    fun `exportId defaults to a fresh value each call when not supplied`() {
+    fun `exportId is content-derived (deterministic) when not supplied`() {
         val incident = incident(id = "inc_a")
         val m1 = IssuesManifestBuilder.build(listOf(incident), emptyMap(), "9.9.9", "csapp-proj", nowMillis = 0)
         val m2 = IssuesManifestBuilder.build(listOf(incident), emptyMap(), "9.9.9", "csapp-proj", nowMillis = 0)
 
         assertNotNull(m1.exportId)
         assertTrue(m1.exportId.isNotBlank())
-        assertTrue("distinct exports must not share an exportId", m1.exportId != m2.exportId)
+        assertTrue("identical content must yield an identical exportId", m1.exportId == m2.exportId)
+        val m3 = IssuesManifestBuilder.build(listOf(incident.copy(updatedAt = incident.updatedAt + 1)), emptyMap(), "9.9.9", "csapp-proj", nowMillis = 0)
+        assertTrue("changed content must change the exportId", m1.exportId != m3.exportId)
     }
 }

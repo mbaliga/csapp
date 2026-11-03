@@ -2,6 +2,7 @@ package com.mbaliga.csapp.data.github
 
 import com.mbaliga.csapp.data.db.dao.CheckpointDao
 import com.mbaliga.csapp.data.db.entities.GithubCheckpointEntity
+import com.mbaliga.csapp.domain.model.DEFAULT_PROJECT_ID
 import com.mbaliga.csapp.domain.model.Signal
 import com.mbaliga.csapp.domain.model.SignalType
 import com.mbaliga.csapp.domain.repository.SignalRepository
@@ -20,7 +21,7 @@ class GitHubIssuePollRepository(
     private val now: () -> Long = { System.currentTimeMillis() },
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    suspend fun pollRepo(owner: String, repo: String) {
+    suspend fun pollRepo(owner: String, repo: String, projectId: String = DEFAULT_PROJECT_ID) {
         val repoFullName = "$owner/$repo"
         val existingCheckpoint = checkpointDao.findGithubCheckpoint(repoFullName)
         val checkpoint = GithubPollCheckpoint(
@@ -33,7 +34,7 @@ class GitHubIssuePollRepository(
         if (result.notModified) return
 
         for (issue in result.issues) {
-            val signal = issue.toSignal(owner, repo)
+            val signal = issue.toSignal(owner, repo, projectId)
             signalRepository.ingestOrUpdate(signal)
         }
 
@@ -48,7 +49,7 @@ class GitHubIssuePollRepository(
         )
     }
 
-    private fun GitHubIssueDto.toSignal(owner: String, repo: String): Signal {
+    private fun GitHubIssueDto.toSignal(owner: String, repo: String, projectId: String): Signal {
         val createdAtMillis = runCatching { Instant.parse(createdAt).toEpochMilli() }.getOrDefault(now())
         val updatedAtMillis = runCatching { Instant.parse(updatedAt).toEpochMilli() }.getOrDefault(createdAtMillis)
         return Signal(
@@ -65,6 +66,7 @@ class GitHubIssuePollRepository(
                 put("htmlUrl", htmlUrl)
                 put("state", state)
             }.toString(),
+            projectId = projectId,
         )
     }
 }

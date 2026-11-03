@@ -4,7 +4,9 @@ import com.mbaliga.csapp.data.db.dao.IncidentDao
 import com.mbaliga.csapp.data.db.dao.SignalDao
 import com.mbaliga.csapp.domain.clustering.AnchorIdGenerator
 import com.mbaliga.csapp.domain.clustering.ClusteringEngine
+import com.mbaliga.csapp.domain.model.DEFAULT_PROJECT_ID
 import com.mbaliga.csapp.domain.model.Incident
+import com.mbaliga.csapp.domain.model.Signal
 import com.mbaliga.csapp.domain.model.IncidentStatus
 import com.mbaliga.csapp.domain.model.Severity
 import java.util.UUID
@@ -27,21 +29,34 @@ class IncidentRepository(
 
     fun observeAll(): Flow<List<Incident>> = incidentDao.observeAll().map { list -> list.map { it.toDomain() } }
 
+    fun observeProject(projectId: String): Flow<List<Incident>> =
+        incidentDao.observeAll().map { list -> list.filter { it.projectId == projectId }.map { it.toDomain() } }
+
     suspend fun getAll(): List<Incident> = incidentDao.findAll().map { it.toDomain() }
+
+    suspend fun getForProject(projectId: String): List<Incident> =
+        incidentDao.findAll().filter { it.projectId == projectId }.map { it.toDomain() }
 
     suspend fun getById(id: String): Incident? = incidentDao.findById(id)?.toDomain()
 
     /** Runs the clustering pass over currently-unclustered signals and persists the result. */
     suspend fun runClustering() {
-        val unclustered = signalDao.findUnclustered().map { it.toDomain() }
-        if (unclustered.isEmpty()) return
+        val allUnclustered = signalDao.findUnclustered().map { it.toDomain() }
+        if (allUnclustered.isEmpty()) return
 
-        val openIncidents = incidentDao.findOpen().map { it.toDomain() }
+        val allOpen = incidentDao.findOpen().map { it.toDomain() }
+        // Clustering is strictly per project: a signal can only join an incident of its own project.
+        for ((projectId, unclustered) in allUnclustered.groupBy { it.projectId }.toSortedMap()) {
+            clusterProject(projectId, unclustered, allOpen.filter { it.projectId == projectId })
+        }
+    }
+
+    private suspend fun clusterProject(projectId: String, unclustered: List<Signal>, openIncidents: List<Incident>) {
         val membersByIncident = openIncidents.associate { incident ->
             incident.id to signalDao.findByIncidentId(incident.id).map { it.toDomain() }
         }
 
-        val result = clusteringEngine.cluster(unclustered, openIncidents, membersByIncident)
+        val result = clusteringEngine.cluster(unclustered, openIncidents, membersByIncident, projectId)
 
         for ((sourceKey, incidentId) in result.signalAssignments) {
             signalDao.assignIncident(sourceKey, incidentId)
@@ -59,7 +74,7 @@ class IncidentRepository(
     }
 
     /** Manually authors a new incident. Its id is a UUID minted once, at creation time. */
-    suspend fun createManual(title: String, summary: String, severity: Severity): Incident {
+    suspend fun createManual(title: String, summary: String, severity: Severity, projectId: String = DEFAULT_PROJECT_ID): Incident {
         val incident = Incident(
             id = "inc_manual_${UUID.randomUUID()}",
             title = title,
@@ -69,6 +84,7 @@ class IncidentRepository(
             isManual = true,
             createdAt = now(),
             updatedAt = now(),
+            projectId = projectId,
         )
         incidentDao.upsert(incident.toEntity())
         return incident
@@ -82,6 +98,19 @@ class IncidentRepository(
     suspend fun updateStatus(id: String, status: IncidentStatus) {
         val entity = incidentDao.findById(id) ?: return
         incidentDao.update(entity.copy(status = status.name, updatedAt = now()))
+    }
+
+    /** Applies an accepted AI triage suggestion. Reached only from an explicit user Accept. */
+    suspend fun applyTriage(id: String, severity: Severity, title: String?, summary: String?) {
+        val entity = incidentDao.findById(id) ?: return
+        incidentDao.update(
+            entity.copy(
+                severity = severity.name,
+                title = title?.takeIf { it.isNotBlank() } ?: entity.title,
+                summary = summary?.takeIf { it.isNotBlank() } ?: entity.summary,
+                updatedAt = now(),
+            )
+        )
     }
 
     suspend fun dismiss(id: String) = updateStatus(id, IncidentStatus.DISMISSED)
@@ -103,7 +132,8 @@ class IncidentRepository(
         if (movingSignals.isEmpty()) return null
 
         val anchorKey = AnchorIdGenerator.chooseAnchor(movingSignals.map { it.sourceKey to it.createdAt })
-        val newIncidentId = AnchorIdGenerator.fromAnchorKey(anchorKey)
+        val splitProject = movingSignals.first().projectId
+        val newIncidentId = AnchorIdGenerator.fromAnchorKey(anchorKey, splitProject.takeIf { it != DEFAULT_PROJECT_ID })
         val anchorSignal = movingSignals.first { it.sourceKey == anchorKey }
 
         val newIncident = Incident(
@@ -115,6 +145,7 @@ class IncidentRepository(
             isManual = false,
             createdAt = now(),
             updatedAt = now(),
+            projectId = movingSignals.first().projectId,
         )
         incidentDao.upsert(newIncident.toEntity())
         for (signal in movingSignals) {
@@ -140,6 +171,7 @@ class IncidentRepository(
         if (incidentIds.size < 2) return null
         val incidents = incidentIds.mapNotNull { incidentDao.findById(it)?.toDomain() }
         if (incidents.size < 2) return null
+        require(incidents.map { it.projectId }.toSet().size == 1) { "Cannot merge incidents across projects" }
 
         val survivor = incidents.sortedWith(compareBy({ it.createdAt }, { it.id })).first()
         val losers = incidents.filter { it.id != survivor.id }
