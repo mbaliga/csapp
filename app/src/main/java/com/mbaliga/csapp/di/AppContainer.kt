@@ -12,6 +12,7 @@ import com.mbaliga.csapp.data.play.PlayReviewRepository
 import com.mbaliga.csapp.data.play.PlayReviewsApiClient
 import com.mbaliga.csapp.data.play.PlayServiceAccountAuth
 import com.mbaliga.csapp.data.settings.AppSettingsStore
+import com.mbaliga.csapp.data.settings.resolveProjectExternalId
 import com.mbaliga.csapp.domain.repository.IncidentRepository
 import com.mbaliga.csapp.domain.repository.SignalRepository
 import java.util.concurrent.TimeUnit
@@ -71,6 +72,13 @@ class AppContainer(context: Context) {
     }
 
     val issuesManifestExporter: IssuesManifestExporter by lazy {
-        IssuesManifestExporter(appContext.contentResolver)
+        val producerVersion = appContext.packageManager
+            .getPackageInfo(appContext.packageName, 0)
+            .versionName ?: "0.0.0"
+        IssuesManifestExporter(
+            contentResolver = appContext.contentResolver,
+            producerVersion = producerVersion,
+            projectExternalIdProvider = { settingsStore.resolveProjectExternalId() },
+        )
     }
 }

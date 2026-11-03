@@ -61,9 +61,30 @@ this app transitions a reply to sent automatically.
 
 ### Export
 
-`issues-manifest.json` v1 — a deterministic snapshot of every incident and its signals, written
-through the system document picker. Incidents are sorted by id and timestamps are ISO-8601, so two
-exports of the same data are byte-identical and diffable.
+`issues-manifest.json` v1 — a snapshot of every incident, flattened to the ratified hub `CsAppIssue`
+shape (`docs/ratified/CSAPP_ISSUES_MANIFEST_V1.md` in `mbaliga/Android-IDE-core`, INT-013), written
+through the system document picker. That shape has no signal-level list: each incident's signals are
+**not** exported as a structured array — they are folded into human-readable lines inside the
+free-text `detail` field (`- [TYPE] title (sourceKey)`), so signal information rides along as text,
+not as data the hub schema recognizes as `signals`.
+
+The `issues[]` content is deterministic for the same underlying data — incidents are sorted by id,
+the signal lines folded into each `detail` are sorted by `sourceKey`, and timestamps are ISO-8601 —
+so two exports of unchanged data produce identical `issues[]`. The manifest file as a whole is
+**not** byte-identical across runs, though: every export stamps a fresh random `exportId` (a
+`UUID`) and the wall-clock `exportedAt`, both by design (`IssuesManifestBuilder.build`). "Diffable"
+means diffable on `issues[]` content, not a byte-for-byte comparison of the whole file.
+
+> **OPEN OWNER QUESTION.** The hub's own duplicate-snapshot detection (INT-006, `docs/ratified/
+> CSAPP_ISSUES_MANIFEST_V1.md` §2 in `mbaliga/Android-IDE-core`) is defined as "the whole export's
+> digest is byte-identical to a prior import." Because `exportId` is a fresh random UUID (and
+> `exportedAt` is wall-clock) on every CSApp export, re-exporting *unchanged* incident data still
+> produces a different whole-file digest each time — so the hub's whole-file-digest duplicate check
+> can never fire from a CSApp export, even when nothing about the incidents changed. Should
+> `exportId` instead derive deterministically from a digest of the `issues[]` content (so an
+> unchanged re-export reproduces the same `exportId` and whole-file digest), or is a fresh
+> `exportId` per run intentional, with the hub expected to dedupe some other way (e.g. hashing
+> `issues[]` rather than the whole file)? Not decided here — this note does not change any code.
 
 ### Edit detection
 
@@ -229,7 +250,7 @@ The pure layers carry the tests, which is the point of keeping `domain/` Android
 |---|---|
 | `ClusteringEngineTest` | Grouping behaviour and determinism |
 | `AnchorIdGeneratorTest` | Stable ids, deterministic anchor choice |
-| `IssuesManifestBuilderTest` | Deterministic, diffable export |
+| `IssuesManifestBuilderTest` | Deterministic `issues[]` content/ordering; `exportId` intentionally fresh per call |
 | `IncidentRepositoryTest`, `SignalRepositoryTest` | Merge/split/recurring, ingestion outcomes — against `FakeIncidentDao`/`FakeSignalDao`, so no emulator |
 | `GitHubIssuePollingClientTest` | Request shape and response parsing |
 | `PlayMonthlyReportParserTest` | The UTF-16-BOM CSV format |
