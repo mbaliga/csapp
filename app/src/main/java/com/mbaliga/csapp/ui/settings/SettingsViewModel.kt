@@ -90,6 +90,10 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
         return GmailOAuth.authUrl(m.host, verifier, state)
     }
 
+    fun shareDiagnostics(context: android.content.Context) {
+        viewModelScope.launch { try { Diagnostics.share(context, c) } catch (e: Exception) { say("Diagnostics failed: ${e.message}") } }
+    }
+
     // ---- AI
     fun saveAi(preset: ProviderPreset?, baseUrl: String, model: String, key: String) {
         c.settingsStore.aiPreset = preset?.name

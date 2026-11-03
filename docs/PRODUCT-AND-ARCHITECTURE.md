@@ -68,23 +68,22 @@ through the system document picker. That shape has no signal-level list: each in
 free-text `detail` field (`- [TYPE] title (sourceKey)`), so signal information rides along as text,
 not as data the hub schema recognizes as `signals`.
 
-The `issues[]` content is deterministic for the same underlying data — incidents are sorted by id,
-the signal lines folded into each `detail` are sorted by `sourceKey`, and timestamps are ISO-8601 —
-so two exports of unchanged data produce identical `issues[]`. The manifest file as a whole is
-**not** byte-identical across runs, though: every export stamps a fresh random `exportId` (a
-`UUID`) and the wall-clock `exportedAt`, both by design (`IssuesManifestBuilder.build`). "Diffable"
-means diffable on `issues[]` content, not a byte-for-byte comparison of the whole file.
+**Deterministic bytes (ratified, WP5).** The file is named `issues-manifest.v1.json`, one per project.
+Two exports of unchanged data are **byte-identical**, so Core's whole-file digest can detect
+`IMPORT_DUPLICATE_SNAPSHOT` (INT-006):
 
-> **OPEN OWNER QUESTION.** The hub's own duplicate-snapshot detection (INT-006, `docs/ratified/
-> CSAPP_ISSUES_MANIFEST_V1.md` §2 in `mbaliga/Android-IDE-core`) is defined as "the whole export's
-> digest is byte-identical to a prior import." Because `exportId` is a fresh random UUID (and
-> `exportedAt` is wall-clock) on every CSApp export, re-exporting *unchanged* incident data still
-> produces a different whole-file digest each time — so the hub's whole-file-digest duplicate check
-> can never fire from a CSApp export, even when nothing about the incidents changed. Should
-> `exportId` instead derive deterministically from a digest of the `issues[]` content (so an
-> unchanged re-export reproduces the same `exportId` and whole-file digest), or is a fresh
-> `exportId` per run intentional, with the hub expected to dedupe some other way (e.g. hashing
-> `issues[]` rather than the whole file)? Not decided here — this note does not change any code.
+- `exportedAt` = the maximum `updatedAt` over the exported issues (or the project's `createdAt` when
+  there are none) — never the wall clock.
+- `exportId` = lowercase hex `sha256` of the canonical JSON of the manifest with `exportId` set to `""`.
+- Incidents are sorted by id; signal lines inside `detail` are sorted by `sourceKey`.
+- `DISMISSED` and `MERGED` incidents are not exported (a merge survivor carries the signals).
+- `sourceRevision` = the newest `sourceUpdatedAt` among an incident's signals, so a customer edit after
+  an import shows as *changed* rather than a duplicate.
+- `status` stays descriptive free text (INT-015); Core maps it after user confirmation.
+
+At export time an in-app invariant check runs (`IssuesManifestBuilder.validate`: schemaVersion, ids,
+severities, ISO instants). Full JSON-Schema validation against the ratified schema runs in CI
+(`ExportConformanceTest`, `networknt/json-schema-validator`, test scope only, to keep the APK small).
 
 ### Edit detection
 
@@ -250,7 +249,7 @@ The pure layers carry the tests, which is the point of keeping `domain/` Android
 |---|---|
 | `ClusteringEngineTest` | Grouping behaviour and determinism |
 | `AnchorIdGeneratorTest` | Stable ids, deterministic anchor choice |
-| `IssuesManifestBuilderTest` | Deterministic `issues[]` content/ordering; `exportId` intentionally fresh per call |
+| `IssuesManifestBuilderTest` | Deterministic `issues[]` content/ordering; content-derived `exportId` |
 | `IncidentRepositoryTest`, `SignalRepositoryTest` | Merge/split/recurring, ingestion outcomes — against `FakeIncidentDao`/`FakeSignalDao`, so no emulator |
 | `GitHubIssuePollingClientTest` | Request shape and response parsing |
 | `PlayMonthlyReportParserTest` | The UTF-16-BOM CSV format |

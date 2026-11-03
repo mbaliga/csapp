@@ -18,3 +18,16 @@
 
 # Room
 -keep class * extends androidx.room.RoomDatabase
+
+# Room entities / DAOs are reflected on by the generated code
+-keep class com.mbaliga.csapp.data.db.entities.** { *; }
+-keep class * extends androidx.room.RoomDatabase { *; }
+
+# JSON DTOs decoded by kotlinx.serialization
+-keep class com.mbaliga.csapp.data.play.** { *; }
+-keep class com.mbaliga.csapp.data.github.** { *; }
+-keep class com.mbaliga.csapp.data.export.** { *; }
+
+# Versioned AI prompts are read as Java resources by name
+-keepclassmembers class com.mbaliga.csapp.domain.ai.ResourcePrompts { *; }
+-dontwarn org.slf4j.**

@@ -118,6 +118,10 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
                         "No telemetry, no analytics, no automatic sends. Network calls go only to the services you configure: Google Play Developer API, GitHub API, your mail server or Gmail, and the AI model provider you choose.",
                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (BuildConfig.DEBUG) {
+                        OutlinedButton(onClick = { vm.shareDiagnostics(ctx) }) { Text("Export diagnostics (debug)") }
+                        InfoText("Versions, device and row counts only — no message text, no credentials.")
+                    }
                 }
             }
         }

@@ -14,15 +14,31 @@ android {
         applicationId = "com.mbaliga.csapp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Release signing comes from the environment only (CI secrets / your shell); never from the repo.
+    // Without them the release build is left unsigned and the debug-signed APK is the sideload build.
+    val ksPath = System.getenv("CSAPP_KEYSTORE_PATH")
+    signingConfigs {
+        if (ksPath != null && file(ksPath).exists()) {
+            create("release") {
+                storeFile = file(ksPath)
+                storePassword = System.getenv("CSAPP_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("CSAPP_KEY_ALIAS")
+                keyPassword = System.getenv("CSAPP_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -55,7 +71,14 @@ android {
 
     testOptions {
         unitTests {
-            isIncludeAndroidResources = false
+            all { t ->
+                // Optional offline Robolectric runtime (CI downloads it normally).
+                System.getenv("ROBOLECTRIC_DEPS_DIR")?.let { d ->
+                    t.systemProperty("robolectric.offline", "true")
+                    t.systemProperty("robolectric.dependency.dir", d)
+                }
+            }
+            isIncludeAndroidResources = true
             isReturnDefaultValues = true
         }
     }
@@ -97,6 +120,9 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.sqlite.jdbc)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.room.testing)
     testImplementation(libs.json.schema.validator)
 
     androidTestImplementation(libs.androidx.test.ext.junit)
@@ -107,3 +133,7 @@ dependencies {
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
+
+// Room's MigrationTestHelper reads the exported schema JSONs as assets. Robolectric sees the debug
+// variant's merged assets, so the (tiny) schema JSONs ride in debug builds only — never in release.
+android.sourceSets.getByName("debug").assets.srcDir("$projectDir/schemas")
