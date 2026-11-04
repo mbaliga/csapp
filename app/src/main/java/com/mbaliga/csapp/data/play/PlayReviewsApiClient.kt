@@ -41,7 +41,7 @@ class PlayReviewsApiClient(
 
             httpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    throw PlayApiException("Play reviews.list failed: HTTP ${response.code} for $packageName")
+                    throw PlayApiException("Play reviews.list failed: HTTP ${response.code} for $packageName", response.code)
                 }
                 val parsed = json.decodeFromString<PlayReviewsListResponse>(response.body?.string().orEmpty())
                 allReviews.addAll(parsed.reviews)
@@ -69,10 +69,12 @@ class PlayReviewsApiClient(
 
         httpClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                throw PlayApiException("Play reviews.reply failed: HTTP ${response.code} for review $reviewId")
+                throw PlayApiException("Play reviews.reply failed: HTTP ${response.code} for review $reviewId", response.code)
             }
         }
     }
 }
 
-class PlayApiException(message: String) : Exception(message)
+class PlayApiException(message: String, val httpStatus: Int? = null) : Exception(message)
+
+class ReplyRejectedException(message: String) : Exception(message)

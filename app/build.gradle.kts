@@ -8,21 +8,37 @@ plugins {
 
 android {
     namespace = "com.mbaliga.csapp"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.mbaliga.csapp"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        targetSdk = 36
+        versionCode = 2
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Release signing comes from the environment only (CI secrets / your shell); never from the repo.
+    // Without them the release build is left unsigned and the debug-signed APK is the sideload build.
+    val ksPath = System.getenv("CSAPP_KEYSTORE_PATH")
+    signingConfigs {
+        if (ksPath != null && file(ksPath).exists()) {
+            create("release") {
+                storeFile = file(ksPath)
+                storePassword = System.getenv("CSAPP_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("CSAPP_KEY_ALIAS")
+                keyPassword = System.getenv("CSAPP_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -44,6 +60,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
@@ -54,7 +71,14 @@ android {
 
     testOptions {
         unitTests {
-            isIncludeAndroidResources = false
+            all { t ->
+                // Optional offline Robolectric runtime (CI downloads it normally).
+                System.getenv("ROBOLECTRIC_DEPS_DIR")?.let { d ->
+                    t.systemProperty("robolectric.offline", "true")
+                    t.systemProperty("robolectric.dependency.dir", d)
+                }
+            }
+            isIncludeAndroidResources = true
             isReturnDefaultValues = true
         }
     }
@@ -78,7 +102,12 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.androidx.work.runtime.ktx)
-    implementation(libs.androidx.security.crypto)
+
+    // Constellation-wide crash-recovery harness (dev.aarso:crash-recovery, single-sourced from
+    // mbaliga/Shared-Libraries-asoc — see settings.gradle.kts). Local-only: captures an
+    // uncaught crash to a private file and shows a recovery screen on next launch instead of
+    // bricking. No network dependency, nothing phoned home.
+    implementation("dev.aarso:crash-recovery:1.5.0")
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
@@ -90,8 +119,21 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.sqlite.jdbc)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.room.testing)
+    testImplementation(libs.json.schema.validator)
 
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
 }
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
+// Room's MigrationTestHelper reads the exported schema JSONs as assets. Robolectric sees the debug
+// variant's merged assets, so the (tiny) schema JSONs ride in debug builds only — never in release.
+android.sourceSets.getByName("debug").assets.srcDir("$projectDir/schemas")

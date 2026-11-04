@@ -39,6 +39,9 @@ class FakeSignalDao : SignalDao {
     override suspend fun findByIncidentIds(incidentIds: List<String>): List<SignalEntity> =
         bySourceKey.values.filter { it.incidentId in incidentIds }
 
+    override suspend fun findEmailByThreadId(threadId: String): SignalEntity? =
+        bySourceKey.values.firstOrNull { it.type == "EMAIL" && it.metadataJson?.contains("\"threadId\":\"$threadId\"") == true }
+
     override suspend fun assignIncident(sourceKey: String, incidentId: String) {
         bySourceKey[sourceKey]?.let { bySourceKey[sourceKey] = it.copy(incidentId = incidentId) }
         publish()

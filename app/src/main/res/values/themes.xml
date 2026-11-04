@@ -1,3 +1,8 @@
 <resources>
-    <style name="Theme.CsApp" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Dark first (Hyle ground) so there is no light flash before Compose draws. -->
+    <style name="Theme.CsApp" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#07070A</item>
+        <item name="android:statusBarColor">#07070A</item>
+        <item name="android:navigationBarColor">#07070A</item>
+    </style>
 </resources>

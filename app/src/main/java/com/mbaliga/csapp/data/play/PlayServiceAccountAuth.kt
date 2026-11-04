@@ -7,6 +7,7 @@ import java.security.spec.PKCS8EncodedKeySpec
 import java.util.concurrent.TimeUnit
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.put
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -32,19 +33,20 @@ private data class TokenResponse(
  * private/dogfood-style credential exchange (no user consent screen, no public-distribution
  * OAuth flow), matching the "private/dogfood service-account style auth only" V1 scope.
  */
-class PlayServiceAccountAuth(
+open class PlayServiceAccountAuth(
     private val httpClient: OkHttpClient,
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
     private val jsonCodec = Json { ignoreUnknownKeys = true }
-    private var cachedToken: String? = null
-    private var cachedTokenExpiryMillis: Long = 0
+    private class CachedToken(val token: String, val expiryMillis: Long)
+    private val cache = java.util.concurrent.ConcurrentHashMap<String, CachedToken>()
 
     fun parseKey(rawJson: String): PlayServiceAccountKey = jsonCodec.decodeFromString(rawJson)
 
     /** Returns a valid bearer access token, refreshing it if the cached one has expired. */
-    fun getAccessToken(key: PlayServiceAccountKey, scope: String = ANDROID_PUBLISHER_SCOPE, nowMillis: Long = System.currentTimeMillis()): String {
-        cachedToken?.let { if (nowMillis < cachedTokenExpiryMillis - EXPIRY_SAFETY_MARGIN_MILLIS) return it }
+    open fun getAccessToken(key: PlayServiceAccountKey, scope: String = ANDROID_PUBLISHER_SCOPE, nowMillis: Long = System.currentTimeMillis()): String {
+        val cacheKey = key.clientEmail + "|" + scope
+        cache[cacheKey]?.let { if (nowMillis < it.expiryMillis - EXPIRY_SAFETY_MARGIN_MILLIS) return it.token }
 
         val jwt = buildSignedJwt(key, scope, nowMillis)
         val body = FormBody.Builder()
@@ -58,8 +60,7 @@ class PlayServiceAccountAuth(
                 throw PlayAuthException("Token exchange failed: HTTP ${response.code}")
             }
             val tokenResponse = json.decodeFromString<TokenResponse>(response.body?.string().orEmpty())
-            cachedToken = tokenResponse.accessToken
-            cachedTokenExpiryMillis = nowMillis + TimeUnit.SECONDS.toMillis(tokenResponse.expiresInSeconds)
+            cache[cacheKey] = CachedToken(tokenResponse.accessToken, nowMillis + TimeUnit.SECONDS.toMillis(tokenResponse.expiresInSeconds))
             return tokenResponse.accessToken
         }
     }
@@ -68,7 +69,13 @@ class PlayServiceAccountAuth(
         val header = """{"alg":"RS256","typ":"JWT"}"""
         val issuedAtSeconds = nowMillis / 1000
         val expirySeconds = issuedAtSeconds + TimeUnit.HOURS.toSeconds(1)
-        val claims = """{"iss":"${key.clientEmail}","scope":"$scope","aud":"${key.tokenUri}","iat":$issuedAtSeconds,"exp":$expirySeconds}"""
+        val claims = kotlinx.serialization.json.buildJsonObject {
+            put("iss", key.clientEmail)
+            put("scope", scope)
+            put("aud", key.tokenUri)
+            put("iat", issuedAtSeconds)
+            put("exp", expirySeconds)
+        }.toString()
 
         val encodedHeader = base64UrlEncode(header.toByteArray(Charsets.UTF_8))
         val encodedClaims = base64UrlEncode(claims.toByteArray(Charsets.UTF_8))

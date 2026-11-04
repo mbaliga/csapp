@@ -4,5 +4,6 @@ package com.mbaliga.csapp.domain.model
 enum class SignalType {
     PLAY_REVIEW,
     GITHUB_ISSUE,
+    EMAIL,
     MANUAL,
 }
