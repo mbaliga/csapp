@@ -35,6 +35,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun checkpointDao(): CheckpointDao
     abstract fun projectDao(): com.mbaliga.csapp.data.db.dao.ProjectDao
     abstract fun governanceDao(): com.mbaliga.csapp.data.db.dao.GovernanceDao
+    /** Read-only queries for the home-screen widgets (no entity, so no schema change). */
+    abstract fun widgetDao(): com.mbaliga.csapp.data.db.dao.WidgetDao
 
     companion object {
         const val DATABASE_NAME = "csapp.db"

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widget colours, day. Hyle-derived light tokens (ui/theme/HyleTokens.kt), all text ≥ 4.5:1 on
+     widget_surface. Colour never carries meaning here: every state is a glyph and a word. -->
+<resources>
+    <color name="widget_surface">#FFF1F1F6</color>
+    <color name="widget_text">#FF14141C</color>
+    <color name="widget_muted">#FF55556A</color>
+    <color name="widget_accent">#FF4B36C9</color>
+    <color name="widget_outline">#FFC9C9D6</color>
+</resources>

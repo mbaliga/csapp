@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widget layout (RemoteViews: LinearLayout + TextView only). See docs/widgets.md. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_bg"
+    android:clipToOutline="true"
+    android:padding="@dimen/widget_padding"
+    tools:ignore="UnusedAttribute">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+        <TextView
+            android:id="@+id/w_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="12sp"
+            android:textColor="@color/widget_accent"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textAlignment="viewStart"
+            android:text="@string/widget_top_name" />
+        <TextView
+            android:id="@+id/w_asof"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:textSize="12sp"
+            android:textColor="@color/widget_muted"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textAlignment="viewStart"
+            android:text="Synced 14:05"
+            tools:ignore="HardcodedText" />
+    </LinearLayout>
+    <TextView
+        android:id="@+id/w_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textSize="16sp"
+        android:textColor="@color/widget_text"
+        android:textStyle="bold"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:textAlignment="viewStart"
+        android:text="Crash when opening the camera"
+        tools:ignore="HardcodedText" />
+    <TextView
+        android:id="@+id/w_line_1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textSize="14sp"
+        android:textColor="@color/widget_text"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textAlignment="viewStart"
+        android:text="◆ Critical · ◯ Open"
+        tools:ignore="HardcodedText" />
+    <TextView
+        android:id="@+id/w_line_2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textSize="12sp"
+        android:textColor="@color/widget_muted"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textAlignment="viewStart"
+        android:text="Fotoz · 6 signals"
+        tools:ignore="HardcodedText" />
+</LinearLayout>

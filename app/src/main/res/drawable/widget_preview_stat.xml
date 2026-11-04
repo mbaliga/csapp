@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Picker preview (API < 31) for the stat widgets: a number, a label and a 2x2 breakdown. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="180dp" android:height="110dp" android:viewportWidth="180" android:viewportHeight="110">
+    <path android:fillColor="#101016" android:pathData="M12,0h156a12,12 0,0 1,12 12v86a12,12 0,0 1,-12 12h-156a12,12 0,0 1,-12 -12v-86a12,12 0,0 1,12 -12z" />
+    <path android:fillColor="#8E7BFF" android:pathData="M14,12h60v6h-60z" />
+    <path android:fillColor="#EDEDF3" android:pathData="M14,28h22v22h-22z" />
+    <path android:fillColor="#9D9DAE" android:pathData="M44,38h70v8h-70z" />
+    <path android:fillColor="#EDEDF3" android:pathData="M14,64h66v8h-66zM98,64h66v8h-66zM14,82h66v8h-66zM98,82h66v8h-66z" />
+</vector>
