@@ -1,4 +1,4 @@
-Nothing is sent to a customer unless you read it and confirm it. CS App has no auto-reply, no scheduled send, no analytics, no ads and no account of ours. There is no server of ours between your phone and the services you connect.
+Nothing is sent to a customer unless you read it and confirm it. CS App has no auto-reply, no scheduled reply, no analytics, no ads and no account of ours. There is no server of ours between your phone and the services you connect.
 
 CS App is a support console for people who ship apps. It gathers Play Store reviews, GitHub issues and support email into one queue per project, groups similar reports into incidents, and lets you triage from your phone and reply to Play reviews.
 
@@ -6,33 +6,30 @@ WHAT IT READS
 • Play Store reviews, through the Google Play Developer API with your own service account key. The API returns about the last week of reviews.
 • Older Play history, from the monthly review CSV reports you download from Play Console. You import them one file at a time from a project's screen. Imported reviews cannot be replied to, and may duplicate reviews already fetched.
 • GitHub issues, not pull requests, from the repositories you name. Closed issues are included and arrive as open incidents you can dismiss. A GitHub token is needed for private repositories and optional for public ones.
-• Support email, read-only. Use IMAP with an app password, or Gmail with a read-only sign-in that uses your own Google OAuth client ID. Each mailbox reads one folder or label. A mail filter on each project routes messages to it, and unmatched mail goes to an Inbox project.
+• Support email, read-only, over IMAP with an app password. Each mailbox reads one folder: the first sync goes back 7 days, each sync fetches up to 100 messages, and messages over 2 MB are skipped. A mail filter on each project routes messages to it, and unmatched mail goes to an Inbox project.
 
 PROJECTS
-A project groups a Play app, GitHub repositories and a mail filter, with its own incidents and export. Credentials are shared.
+A project groups a Play app, GitHub repositories and a mail filter, with its own incidents and export.
 
 INCIDENTS
-• Similar reports are grouped by word overlap within a 30 day window. This is a text match, so you can also merge incidents, split reports out, mark a recurrence, and set severity and status yourself.
-• An incident keeps its identifier as more reports join it, and reports that are already grouped are not regrouped when you sync again.
-• Swipe to acknowledge or dismiss, with undo. Filter and sort the list.
-• Add a report by hand.
+• Similar reports are grouped by shared words (Latin letters and digits only) within a 30 day window. It is a text match, so you can also merge incidents, split reports out, mark a recurrence, and set severity and status yourself.
+• Reports already grouped are not regrouped when you sync again.
+• Swipe to acknowledge or dismiss, with undo. Use Filter & sort to narrow the list. Add a report by hand with the + button.
 
 REPLIES
 • Play reviews: write a reply of up to 350 characters, check the exact text in a confirmation dialog, then send. You can edit a sent reply and see what changed before it replaces the old one.
-• Every send is logged with its outcome, and a request counter holds back calls before they reach Google's hourly and daily limits.
+• Every reply sent to Google is logged with its outcome, and a request counter holds back calls before they reach Google's hourly and daily limits.
 • Email: Reply in mail app opens your own mail app with the sender, subject and start of the message filled in. CS App never sends email.
 • GitHub issues: there is no reply from the app.
 
 OPTIONAL AI SUGGESTIONS
-Off until you choose a model. Pick a model server on this phone (for example ASOM), or a cloud provider with your own key: DeepSeek, Grok, OpenAI, Gemini or Anthropic. A model can suggest a severity and title, possible duplicates, a reply draft and a weekly digest. Each suggestion shows where it ran. Nothing changes until you tap Accept, and a reply draft only fills the reply box. With a cloud provider, the review, issue or email text for that action is sent to it along with your key. Each project also has a switch for automatic triage after each background sync. It is off by default, and when on it sends text to the provider without a tap.
+Off until you choose a model. Pick a model server on this phone (for example ASOM), or a cloud provider with your own key: DeepSeek, Grok, OpenAI, Gemini or Anthropic. A model can suggest a severity and title, possible duplicates, a reply draft and a weekly digest. Nothing changes until you tap Accept (or Use draft for a reply), and a draft only fills the reply box. With a cloud provider, the review, issue or email text for that action is sent to it along with your key. Each project also has a switch for automatic triage after each background sync. It is off by default, and when on it sends text to the provider without a tap.
 
 EXPORT
-Save an issues-manifest.v1.json file for a project, or pass it to another app through the Android share sheet. Nothing is exported unless you tap. The file lists each incident that is not dismissed or merged, with its title, severity and status, the titles and identifiers of its reports, and the name or email address of the first reporter, so treat it like the reviews themselves.
+Use Save file to write an issues-manifest.v1.json for a project, or Share to Fonebrew to pass it to any app through the Android share sheet. The file lists each incident that is not dismissed or merged, with its title, severity, status and summary, the titles and identifiers of its reports, and a reporter reference: the name, GitHub login or email sender of one of its reports. Treat it like the reviews themselves. A copy made for sharing stays in the app's private cache until Android clears it.
 
 SYNC
-Checks every 15, 30 or 60 minutes (30 by default) while you are online, and when you pull down on the home screen. There are no notifications.
+Checks about every 15, 30 or 60 minutes (30 by default) while online, as Android allows, and when you pull down on Home. There are no notifications.
 
 YOUR KEYS AND PASSWORDS
-Your Play service account key, GitHub token, mailbox passwords and AI key are stored encrypted with a key held in the Android Keystore. The app opts out of Android backup. Files you save or share stay where you put them.
-
-After a crash, the next launch shows a recovery screen.
+Your Play service account key, GitHub token, mailbox passwords and AI key are stored encrypted with a key held in the Android Keystore. The app turns off Android Auto Backup.
