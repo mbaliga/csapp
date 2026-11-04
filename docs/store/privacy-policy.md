@@ -23,8 +23,8 @@ and the app has no accounts of ours, no advertising, no analytics and no trackin
 
 The app does move data between your phone and services you configure: Google Play,
 GitHub, your mail provider and, if you choose one, an AI provider. Sync runs automatically
-in the background every 15, 30 (the default) or 60 minutes while the phone is online, and
-also when you pull down on Home or tap Sync all now. This page lists every service and what
+in the background about every 15, 30 (the default) or 60 minutes while the phone is online,
+as Android allows, and also when you pull down on Home or tap Sync all now. This page lists every service and what
 each receives.
 
 ## What we collect
@@ -53,7 +53,9 @@ They are stored encrypted, with a key held in the Android Keystore.
 - <!-- gmail -->**Gmail:** you sign in in your browser at Google. The app receives an
   authorisation code and exchanges it at `oauth2.googleapis.com`. The only long-lived
   Google credential it keeps is the refresh token, stored encrypted. It also keeps your
-  OAuth client ID, and a short-lived sign-in check value until sign-in finishes.
+  OAuth client ID. From the moment you start sign-in it keeps a one-time sign-in check value
+  in the app's private settings, not separately encrypted. The app erases it when a sign-in
+  succeeds; if a sign-in is cancelled or fails it stays until you start another.
 - **AI key:** the app keeps one key. It is sent to whichever AI provider address is
   currently saved in Settings, so change or clear it when you switch provider.
 
@@ -81,9 +83,9 @@ sent.
 
 - *Triage:* the incident title, plus up to eight of its reports, each as its type, its
   title in full (for an email, the subject) and the first 600 characters of its body.
-- *Find duplicates:* for the project's open incidents, up to 10 pairs, each sent as its own
-  request with the two incidents' titles and summaries. Tapping it on one incident checks
-  the whole project.
+- *Find duplicates:* for the project's incidents that are not dismissed or merged, up to 10
+  pairs, each sent as its own request with the two incidents' titles and summaries. Tapping
+  it on one incident checks the whole project.
 - *Draft a reply:* the star rating and the first 1,200 characters of the review.
 - *Weekly digest:* up to 30 lines, each an incident's severity, status and title.
 - *Test (in Settings):* the fixed instruction "Reply with the single word: ok" and the
@@ -128,9 +130,11 @@ whatever terms apply to you as an app publisher.
 
 Save file and Share to Fonebrew write an `issues-manifest.v1.json` for one project. It
 lists each incident that is not dismissed or merged, with its title, severity, status and a
-summary (the text you typed for an incident you created by hand, or text a model wrote after
-you accepted it), the titles and identifiers of its reports (email subjects and message IDs
-included), identifiers for recurrences and merges, timestamps, and a reporter reference:
+summary (by default a count line the app writes, such as "3 signal(s) from: PLAY_REVIEW,
+EMAIL"; for an incident you created by hand, the details you typed; after you accept an AI
+triage suggestion, the title and summary a model wrote), the titles and identifiers of its
+reports (email subjects and message IDs included), the identifier of the incident it recurs
+from if you marked a recurrence, timestamps, and a reporter reference:
 the display name, GitHub login or email sender (name and address) of one of its reports. It
 contains no credentials. Titles, subjects and summaries come from the fetched text, so it can
 hold excerpts of reviews, issues and emails. You choose where it goes: Save file writes where
@@ -154,7 +158,8 @@ this one. The app does not control that.
 If the app keeps crashing, the recovery screen offers "Reset & set my data aside". That
 moves the app's data (database, settings and stored credentials) into a private folder.
 The recovery screen can restore it with "Restore the data I set aside", but that screen
-only appears if the app crashes again. After two clean launches the set-aside copy is
+only appears if the app crashes again. After the app's main screen has started cleanly
+twice (each time it is created, which includes rotating the phone), the set-aside copy is
 deleted permanently.
 
 ## What is stored, and where
@@ -189,7 +194,7 @@ issued it.
 | `INTERNET` | To reach the Google Play Developer API, GitHub, your mail server, Google's token endpoint (and <!-- gmail -->Google sign-in), and your chosen AI provider |
 | `ACCESS_NETWORK_STATE` | Lets background sync run only when the phone is online |
 | `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, `FOREGROUND_SERVICE` | Added by the Android WorkManager library for the periodic sync. The app starts no foreground service and runs no work of its own at boot |
-| `com.mbaliga.csapp.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | Added by AndroidX Core. A private permission that only this app itself can hold; it gives no access to your data |
+| `com.mbaliga.csapp.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | Added by AndroidX Core. A signature-level permission, granted by Android only to apps signed with the same key as CS App; it gives no access to your data |
 
 The app shows no notifications and does not ask for location, contacts, storage, camera or
 microphone.

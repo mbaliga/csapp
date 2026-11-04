@@ -46,9 +46,12 @@
   step's `if` normally cannot see. Unconfirmed without a real tag push.
 - **The `shared-libraries` submodule is required to configure any Gradle task**
   (`includeBuild`, pinned at `4a8b0a3`, crash-recovery 1.5.0). The library repo is public,
-  and CI checked it out fine on `080d588`. The risk is the pin: `4a8b0a3` is reachable only
-  from an open PR branch in `Shared-Libraries-asoc` (not the head of any branch), so move
-  the pin to a commit on that repo's `main` before relying on it.
+  and CI checked it out fine on `080d588`. The risk is the pin: `4a8b0a3` is the only commit
+  carrying crash-recovery 1.5.0, and it is reachable only from the open PR #3 branch
+  (`claude/fonebrew-development-clzu43`) in `Shared-Libraries-asoc`, not from its `main`,
+  which is still 1.4.0 with no quarantine or salvage code. Merge the 1.5.0 commits into
+  that repo's `main` first, then move the pin to a commit on `main`. Pointing it at today's
+  `main` would silently drop the code the privacy policy's crash-report paragraph describes.
 - **R8 is on for release and nothing in the repo evidences a release build.**
   `docs/STATUS.md` says "R8 release assembles", but no artifact, log or CI step backs it
   (the same file calls the path "unverified" under Deviations). `proguard-rules.pro` has
@@ -98,7 +101,8 @@ text" though issue and mail text are sent too.
   participating stores in Brazil, Indonesia, Singapore and Thailand; Google's FAQ says
   sideloaded apps and other stores are not covered yet, with wider rollout planned for 2027,
   and a limited-distribution account (up to 20 devices) exists
-  (developer.android.com/developer-verification, fetched 2026-11-04).
+  (developer.android.com/developer-verification and its FAQ at
+  /developer-verification/guides/faq, fetched 2026-11-04).
 - **What the Play build contains.** Cloud AI providers, the background auto-triage
   switch, and Gmail each change the Data safety answer. Recommendation: leave Gmail out
   of the first Play build (see **Gmail**), and either keep cloud AI behind a clear
@@ -122,7 +126,7 @@ answer 15748846), so say what each credential unlocks:
 
 | To see | Needs |
 |---|---|
-| Incidents, triage, export | Tap Projects, then the `+` button (New project), name it and tap Create. In the project choose the `◉ GitHub` chip, enter a **public** `owner/repo` and tap Add source. Back on Home, pull down. A GitHub token is optional (it only lifts rate limits and reaches private repos). The `+` button on Home adds a report by hand. |
+| Incidents, triage, export | Tap Projects, then the `+` button (New project), name it and tap Create. In the project choose the `◉ GitHub` chip, enter a **public** `owner/repo` and tap Add source. Back on Home, pull down. A GitHub token is optional (it only lifts rate limits and reaches private repos). The `+` button on Home opens Add a signal, which adds an item by hand. |
 | Monthly review CSV import | A sample file; no key needed |
 | Support email | A throwaway IMAP mailbox with an app password. Gmail needs the reviewer's own Google OAuth client ID, so do not ask a reviewer to use it. |
 | AI suggestions | Off by default; needs a provider key you supply |
@@ -145,7 +149,7 @@ definition is any transmission off the device, to anyone, including a third part
 | Question | Answer |
 |---|---|
 | Collect or share any required user data types? | **Yes** |
-| Types | **Emails** and **Other user-generated content**: the full title or subject and the first 600 characters of the body of up to eight reports per incident (triage), up to 1,200 characters of a review (reply draft), and incident titles and summaries (duplicates, digest), sent to the AI provider the user configures. No sender or recipient field is sent. Reviewer names and GitHub logins are not transmitted. Add **Email address** or **User IDs** only if you decide the mailbox username (sent to the user's own mail host) or the service account email (inside the token request to Google) counts. Google's list has no "authentication credentials" type, so credentials are not declared as a type: each goes to the service it belongs to, except that the single AI key goes to whichever AI provider is selected (defect 1). |
+| Types | **Emails** and **Other user-generated content**: the full title or subject and the first 600 characters of the body of up to eight reports per incident (triage), up to 1,200 characters of a review (reply draft), incident titles and summaries (duplicate check), and each incident's severity, status and title (digest), sent to the AI provider the user configures. No sender or recipient field is sent. No reviewer-name or GitHub-login field is sent, but names and addresses can appear inside the review, issue or email text, which is not redacted. Add **Email address** or **User IDs** only if you decide the mailbox username (sent to the user's own mail host) or the service account email (inside the token request to Google) counts. Google's list has no "authentication credentials" type, so credentials are not declared as a type: each goes to the service it belongs to, except that the single AI key goes to whichever AI provider is selected (defect 1). |
 | Optional | Yes. AI is off until the user picks a provider; auto-triage is off by default. |
 | Purpose | App functionality |
 | Processed ephemerally | **Do not claim it.** The exemption fits data held only in memory; what a user-chosen vendor retains is not ours to promise. |
@@ -186,9 +190,12 @@ the release AAB: the debug APK also carries `debuggable` and the exported
 Exported components the app declares: `MainActivity` (launcher only, ignores its intent)
 and `OAuthRedirectActivity` (custom scheme `com.mbaliga.csapp`; the code checks a random
 `state` and uses PKCE, so a hijacked redirect cannot redeem the code). The `FileProvider`
-is not exported. Library components are also exported, each permission-guarded: WorkManager's
+is not exported. Three library components are also exported, each permission-guarded: WorkManager's
 `SystemJobService` (`BIND_JOB_SERVICE`) and `DiagnosticsReceiver` (`DUMP`), and
-`ProfileInstallReceiver` (`DUMP`). They will be in the release manifest too.
+`ProfileInstallReceiver` (`DUMP`). They come from library manifests (work-runtime 2.9.1,
+profileinstaller), not a debug-only source set, so they should be in the release manifest
+too; confirm on the release AAB. The debug-only `PreviewActivity` mentioned above is
+exported with no permission.
 
 ## Target API and platform behaviour
 
@@ -240,7 +247,7 @@ is not exported. Library components are also exported, each permission-guarded: 
   listing copy and changelog already omit Gmail; the privacy policy keeps the Gmail items
   marked `<!-- gmail -->` and says how to remove them. If Gmail ships once row 5 is ticked,
   add this to the email bullet in `full_description.txt` (it needs about 75 characters
-  and the file has 12 to spare, so cut something else) and "or Gmail" to
+  and the file has 2 to spare, so cut something else) and "or Gmail" to
   `changelogs/2.txt`: "or Gmail with a read-only sign-in that uses your own Google OAuth
   client ID".
 
@@ -249,7 +256,11 @@ is not exported. Library components are also exported, each permission-guarded: 
 `HOUSE_DEFAULTS.md` 4.3 rule 4 says never claim behaviour that is not device-verified, and
 leave it out rather than hedge. All 14 verification rows are unticked, so the copy in
 `fastlane/` is drafted and ready, not cleared. Do not upload until the matching row is
-ticked, or cut the sentence. Sentences with no row at all are listed last.
+ticked, or cut the sentence. The last rows below are examples of sentences with no row, not
+a complete list. Rows 1 to 14 also do not exercise: merge, split and recurrence controls,
+the request counter, AI duplicates, reply drafts and the digest, the automatic-triage
+switch, and the mail fetch limits. Walk the whole description against the rows before
+upload.
 
 | Listing claim | Cleared by `VERIFICATION.md` row |
 |---|---|
@@ -263,7 +274,7 @@ ticked, or cut the sentence. Sentences with no row at all are listed last.
 | Background sync | 14 |
 | Monthly CSV import | **no row. Add one:** only synthetic UTF-16 fixtures have been parsed, never a real Play export |
 | Reply in mail app | **no row. Add one or cut the sentence** |
-| Swipe to acknowledge or dismiss with undo; Filter & sort; add a report by hand | **no row. Add one or cut the sentences** |
+| Swipe to acknowledge or dismiss with undo; Filter & sort; the `+` button (Add a signal) | **no row. Add one or cut the sentences** |
 | 15 / 30 / 60 minute choice | row 14 covers background sync, not the choice |
 
 The listing no longer mentions the crash recovery screen. Row 12 is debug-only and the app
@@ -276,7 +287,7 @@ screen on an R8 release build before putting it back.
 - [ ] Decide public listing or internal track; confirm account type and closed-test needs
 - [ ] Decide the Play build's scope: cloud AI, background auto-triage, Gmail
 - [ ] Fix or cut defects 1 to 6, or keep the weaker wording in this sheet and the policy
-- [ ] Initialise the submodule; move the `4a8b0a3` pin to a commit on `Shared-Libraries-asoc` main
+- [ ] Initialise the submodule; get the crash-recovery 1.5.0 commits (pin `4a8b0a3`, currently only on PR #3) merged to `Shared-Libraries-asoc` main, then move the pin to a commit on `main` that contains them
 - [ ] Create the upload keystore, set `CSAPP_KEYSTORE_PATH`, `CSAPP_KEYSTORE_PASSWORD`, `CSAPP_KEY_ALIAS` and `CSAPP_KEY_PASSWORD`, run `./gradlew :app:bundleRelease`
 - [ ] Inspect the release AAB: merged manifest, R8 output, prompts present, 16 KB alignment
 - [ ] Run `VERIFICATION.md` on a phone; tick the rows the listing gate needs; add the CSV row

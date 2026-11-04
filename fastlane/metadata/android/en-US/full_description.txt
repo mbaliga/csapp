@@ -12,9 +12,9 @@ PROJECTS
 A project groups a Play app, GitHub repositories and a mail filter, with its own incidents and export.
 
 INCIDENTS
-• Similar reports are grouped by shared words (Latin letters and digits only) within a 30 day window. It is a text match, so you can also merge incidents, split reports out, mark a recurrence, and set severity and status yourself.
+• Similar reports are grouped by shared words (unaccented a-z letters and digits only) within a 30 day window. It is a text match, so you can also merge incidents, split reports out, mark a recurrence, and set severity and status yourself.
 • Reports already grouped are not regrouped when you sync again.
-• Swipe to acknowledge or dismiss, with undo. Use Filter & sort to narrow the list. Add a report by hand with the + button.
+• Swipe to acknowledge or dismiss, with undo. Use Filter & sort to narrow the list. Add a signal by hand with the + button.
 
 REPLIES
 • Play reviews: write a reply of up to 350 characters, check the exact text in a confirmation dialog, then send. You can edit a sent reply and see what changed before it replaces the old one.
@@ -32,4 +32,4 @@ SYNC
 Checks about every 15, 30 or 60 minutes (30 by default) while online, as Android allows, and when you pull down on Home. There are no notifications.
 
 YOUR KEYS AND PASSWORDS
-Your Play service account key, GitHub token, mailbox passwords and AI key are stored encrypted with a key held in the Android Keystore. The app turns off Android Auto Backup.
+Your Play service account key, GitHub token, mailbox passwords and AI key are stored encrypted with a key held in the Android Keystore. The app turns off Android cloud backup.
