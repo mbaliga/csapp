@@ -36,10 +36,10 @@ Clickable (program §9), so nothing below can be confirmed here.
   and CI storage chores. Android is the only target; there is no README, STATE, PROGRESS or device checklist,
   and no port work of any kind (`settings.gradle.kts` includes only `:app`). The one forward-looking sentence is
   in `docs/PRODUCT-AND-ARCHITECTURE.md` §5: the app "predates the constellation's spatial shell".
-- **Stack.** Kotlin 2.0.20 (JVM 17) · Jetpack Compose (BOM 2024.09.02), Material 3, Navigation Compose 2.8.0 ·
-  Gradle 8.9, AGP 8.5.2, KSP 2.0.20-1.0.25, one module `:app` · Room 2.6.1 (4 entities, 3 DAOs, schema v1,
+- **Stack.** Kotlin 2.1.20 (JVM 17) · Jetpack Compose (BOM 2024.09.02), Material 3, Navigation Compose 2.8.0 ·
+  Gradle 8.14.3, AGP 8.9.1, KSP 2.1.20-2.0.1, one module `:app` · Room 2.7.1 (4 entities, 3 DAOs, schema v1,
   `exportSchema = false`) · WorkManager 2.9.1 · `androidx.security:security-crypto` 1.1.0-alpha06 · OkHttp 4.12.0 ·
-  kotlinx-serialization 1.7.1, kotlinx-coroutines 1.8.1 · JUnit 4, MockWebServer. minSdk 26, targetSdk 34.
+  kotlinx-serialization 1.7.1, kotlinx-coroutines 1.8.1 · JUnit 4, MockWebServer. minSdk 26, targetSdk 36.
   No native code, no Google Play Services dependency, no Hyle, no cell-shell (`gradle/libs.versions.toml`).
 - **Size** (run 2026-10-06 at `b38b3a5`):
   `find app/src/main -name '*.kt' | wc -l` → 55 · `find app/src/main -name '*.kt' -print0 | xargs -0 cat | wc -l` → 3,173 ·
@@ -76,7 +76,7 @@ settings, exporter, container, work); the program's §5 row rounds the Android-b
 | Platform API | Where | Porting impact |
 |---|---|---|
 | `EncryptedSharedPreferences` + `MasterKey` | `data/credentials/EncryptedCredentialStore.kt`, injected at `di/AppContainer.kt:28` | One actual per platform behind `CredentialStore`; the main dependency (F6, §7) |
-| Room 2.6.1 + KSP | `data/db/**`, builder at `di/AppContainer.kt:32-34`, DAOs consumed by `domain/repository/*` | Room 2.7+ is KMP with the same annotations; needs KSP/AGP above today's pins; first schema touch needs a migration |
+| Room 2.7.1 + KSP | `data/db/**`, builder at `di/AppContainer.kt:32-34`, DAOs consumed by `domain/repository/*` | Room 2.7+ is KMP with the same annotations; needs KSP/AGP above today's pins; first schema touch needs a migration |
 | WorkManager | `work/*`, scheduled in `CsAppApplication.kt:15` | Desktop: in-process ticker; iOS: opportunistic only; Ubuntu Touch: none |
 | SAF `CreateDocument` + `openOutputStream(uri, "wt")` | `ui/export/ExportScreen.kt:25-29`, `ExportViewModel.kt:3,41`, `IssuesManifestExporter.kt` | Replace `Uri` with a sink obtainable only from a platform picker |
 | `android.util.Base64` | `PlayServiceAccountAuth.kt:3,93,98` | `java.util.Base64` on JVM targets; a common choice is part of the pin ruling |
@@ -219,8 +219,8 @@ package lanes on `main`/tags only, and calls F9's `kmp-matrix.yml` by SHA-pinned
    exactly one call site outside their own definition (tests are excluded; `SignalRepositoryTest.kt:76` calls
    `markReplySent` directly). Done when it passes on `b38b3a5` and fails if a second production call is added.
 3. **Room schema export** (Q11): set `exportSchema = true` and `room.schemaDirectory`, commit the baseline `1.json`
-   from Room 2.6.1. `.gitignore` currently ignores `/app/schemas`; remove that line in the same PR and commit the baseline
-   `app/schemas/com.mbaliga.csapp.data.db.AppDatabase/1.json` from Room 2.6.1. L1 moves the directory to `core/schemas`
+   from Room 2.7.1. `.gitignore` currently ignores `/app/schemas`; remove that line in the same PR and commit the baseline
+   `app/schemas/com.mbaliga.csapp.data.db.AppDatabase/1.json` from Room 2.7.1. L1 moves the directory to `core/schemas`
    with the rest of `data/db`. Done when the schema file is reviewable in the PR.
 4. **Android V1 device smoke** by the owner, `NEEDS-DEVICE-VALIDATION` (Q12): nothing records csapp running on a
    device, and the restructure below moves every Android source path.

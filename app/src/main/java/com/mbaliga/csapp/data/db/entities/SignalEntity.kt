@@ -1,5 +1,6 @@
 package com.mbaliga.csapp.data.db.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -14,6 +15,7 @@ import androidx.room.PrimaryKey
         Index(value = ["sourceKey"], unique = true),
         Index(value = ["incidentId"]),
         Index(value = ["type"]),
+        Index(value = ["projectId"]),
     ],
 )
 data class SignalEntity(
@@ -34,4 +36,6 @@ data class SignalEntity(
     val replyDraft: String?,
     val repliedAt: Long?,
     val metadataJson: String?,
+    @ColumnInfo(defaultValue = "default") val projectId: String = "default",
+    val sentReplyText: String? = null,
 )

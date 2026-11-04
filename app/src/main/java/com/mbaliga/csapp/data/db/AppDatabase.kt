@@ -1,5 +1,7 @@
 package com.mbaliga.csapp.data.db
 
+import com.mbaliga.csapp.data.db.entities.*
+
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.mbaliga.csapp.data.db.dao.CheckpointDao
@@ -16,14 +18,23 @@ import com.mbaliga.csapp.data.db.entities.SignalEntity
         IncidentEntity::class,
         GithubCheckpointEntity::class,
         PlayCheckpointEntity::class,
+        ProjectEntity::class,
+        ProjectSourceEntity::class,
+        MailboxEntity::class,
+        MailCheckpointEntity::class,
+        ReplyLogEntity::class,
+        QuotaEntity::class,
+        SuggestionEntity::class,
     ],
-    version = 1,
-    exportSchema = false,
+    version = 2,
+    exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun signalDao(): SignalDao
     abstract fun incidentDao(): IncidentDao
     abstract fun checkpointDao(): CheckpointDao
+    abstract fun projectDao(): com.mbaliga.csapp.data.db.dao.ProjectDao
+    abstract fun governanceDao(): com.mbaliga.csapp.data.db.dao.GovernanceDao
 
     companion object {
         const val DATABASE_NAME = "csapp.db"

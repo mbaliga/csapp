@@ -17,11 +17,14 @@ object AnchorIdGenerator {
     private const val ID_HEX_LENGTH = 16
 
     /** Deterministically derive an incident id from a single anchor source key. */
-    fun fromAnchorKey(anchorSourceKey: String): String {
+    fun fromAnchorKey(anchorSourceKey: String, projectSlug: String? = null): String {
         val digest = MessageDigest.getInstance("SHA-256")
             .digest(anchorSourceKey.toByteArray(Charsets.UTF_8))
         val hex = digest.joinToString(separator = "") { "%02x".format(it) }
-        return PREFIX + hex.take(ID_HEX_LENGTH)
+        if (projectSlug == null) return PREFIX + hex.take(ID_HEX_LENGTH)
+        // Project-scoped ids: inc_<slug16>_<hash16> so ids cannot collide across projects.
+        val slug = projectSlug.lowercase().replace(Regex("[^a-z0-9]+"), "").take(16).ifEmpty { "p" }
+        return PREFIX + slug + "_" + hex.take(ID_HEX_LENGTH)
     }
 
     /**

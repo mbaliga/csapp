@@ -61,9 +61,29 @@ this app transitions a reply to sent automatically.
 
 ### Export
 
-`issues-manifest.json` v1 — a deterministic snapshot of every incident and its signals, written
-through the system document picker. Incidents are sorted by id and timestamps are ISO-8601, so two
-exports of the same data are byte-identical and diffable.
+`issues-manifest.json` v1 — a snapshot of every incident, flattened to the ratified hub `CsAppIssue`
+shape (`docs/ratified/CSAPP_ISSUES_MANIFEST_V1.md` in `mbaliga/Android-IDE-core`, INT-013), written
+through the system document picker. That shape has no signal-level list: each incident's signals are
+**not** exported as a structured array — they are folded into human-readable lines inside the
+free-text `detail` field (`- [TYPE] title (sourceKey)`), so signal information rides along as text,
+not as data the hub schema recognizes as `signals`.
+
+**Deterministic bytes (ratified, WP5).** The file is named `issues-manifest.v1.json`, one per project.
+Two exports of unchanged data are **byte-identical**, so Core's whole-file digest can detect
+`IMPORT_DUPLICATE_SNAPSHOT` (INT-006):
+
+- `exportedAt` = the maximum `updatedAt` over the exported issues (or the project's `createdAt` when
+  there are none) — never the wall clock.
+- `exportId` = lowercase hex `sha256` of the canonical JSON of the manifest with `exportId` set to `""`.
+- Incidents are sorted by id; signal lines inside `detail` are sorted by `sourceKey`.
+- `DISMISSED` and `MERGED` incidents are not exported (a merge survivor carries the signals).
+- `sourceRevision` = the newest `sourceUpdatedAt` among an incident's signals, so a customer edit after
+  an import shows as *changed* rather than a duplicate.
+- `status` stays descriptive free text (INT-015); Core maps it after user confirmation.
+
+At export time an in-app invariant check runs (`IssuesManifestBuilder.validate`: schemaVersion, ids,
+severities, ISO instants). Full JSON-Schema validation against the ratified schema runs in CI
+(`ExportConformanceTest`, `networknt/json-schema-validator`, test scope only, to keep the APK small).
 
 ### Edit detection
 
@@ -229,7 +249,7 @@ The pure layers carry the tests, which is the point of keeping `domain/` Android
 |---|---|
 | `ClusteringEngineTest` | Grouping behaviour and determinism |
 | `AnchorIdGeneratorTest` | Stable ids, deterministic anchor choice |
-| `IssuesManifestBuilderTest` | Deterministic, diffable export |
+| `IssuesManifestBuilderTest` | Deterministic `issues[]` content/ordering; content-derived `exportId` |
 | `IncidentRepositoryTest`, `SignalRepositoryTest` | Merge/split/recurring, ingestion outcomes — against `FakeIncidentDao`/`FakeSignalDao`, so no emulator |
 | `GitHubIssuePollingClientTest` | Request shape and response parsing |
 | `PlayMonthlyReportParserTest` | The UTF-16-BOM CSV format |

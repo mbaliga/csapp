@@ -1,13 +1,15 @@
 package com.mbaliga.csapp.ui.nav
 
 object Destinations {
-    const val DASHBOARD = "dashboard"
+    const val HOME = "home"
     const val INCIDENT_DETAIL = "incident/{incidentId}"
-    const val MANUAL_INCIDENT = "incident/new"
+    const val NEW_SIGNAL = "signal/new"
     const val REPLY = "reply/{sourceKey}"
     const val SETTINGS = "settings"
-    const val EXPORT = "export"
+    const val PROJECTS = "projects"
+    const val PROJECT_DETAIL = "project/{projectId}"
 
-    fun incidentDetail(incidentId: String) = "incident/$incidentId"
+    fun incidentDetail(id: String) = "incident/${android.net.Uri.encode(id)}"
     fun reply(sourceKey: String) = "reply/${android.net.Uri.encode(sourceKey)}"
+    fun project(id: String) = "project/${android.net.Uri.encode(id)}"
 }

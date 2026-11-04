@@ -1,96 +1,99 @@
 package com.mbaliga.csapp.ui.incident
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.mbaliga.csapp.data.db.entities.SuggestionEntity
+import com.mbaliga.csapp.di.AppContainer
 import com.mbaliga.csapp.domain.model.Incident
 import com.mbaliga.csapp.domain.model.IncidentStatus
 import com.mbaliga.csapp.domain.model.Severity
 import com.mbaliga.csapp.domain.model.Signal
-import com.mbaliga.csapp.domain.repository.IncidentRepository
-import com.mbaliga.csapp.domain.repository.SignalRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class IncidentDetailUiState(
     val incident: Incident? = null,
     val signals: List<Signal> = emptyList(),
+    val others: List<Incident> = emptyList(),
+    val suggestions: List<SuggestionEntity> = emptyList(),
+    val selectedForSplit: Set<String> = emptySet(),
+    val aiConfigured: Boolean = false,
+    val busy: Boolean = false,
+    val message: String? = null,
     val isLoading: Boolean = true,
 )
 
-class IncidentDetailViewModel(
-    private val incidentId: String,
-    private val incidentRepository: IncidentRepository,
-    private val signalRepository: SignalRepository,
-) : ViewModel() {
-
-    private val _uiState = MutableStateFlow(IncidentDetailUiState())
-    val uiState: StateFlow<IncidentDetailUiState> = _uiState.asStateFlow()
+class IncidentDetailViewModel(private val incidentId: String, private val c: AppContainer) : ViewModel() {
+    private val _ui = MutableStateFlow(IncidentDetailUiState())
+    val uiState: StateFlow<IncidentDetailUiState> = _ui.asStateFlow()
 
     init {
         refresh()
+        viewModelScope.launch {
+            c.database.governanceDao().observePending().collect { all ->
+                _ui.update { s -> s.copy(suggestions = all.filter { it.targetId == incidentId || it.targetId.split("+").contains(incidentId) }) }
+            }
+        }
     }
 
     fun refresh() {
         viewModelScope.launch {
-            val incident = incidentRepository.getById(incidentId)
-            val signals = if (incident != null) signalRepository.getByIncidentId(incidentId) else emptyList()
-            _uiState.value = IncidentDetailUiState(incident, signals, isLoading = false)
+            val incident = c.incidentRepository.getById(incidentId)
+            val signals = if (incident != null) c.signalRepository.getByIncidentId(incidentId) else emptyList()
+            val others = incident?.let { inc ->
+                c.incidentRepository.getForProject(inc.projectId).filter { it.id != incidentId && it.status != IncidentStatus.MERGED }
+            }.orEmpty()
+            _ui.update { it.copy(incident = incident, signals = signals, others = others, aiConfigured = c.suggestionService.isConfigured, isLoading = false) }
         }
     }
 
-    fun setSeverity(severity: Severity) {
+    private fun act(block: suspend () -> Unit) = viewModelScope.launch {
+        try { block() } catch (e: Exception) { _ui.update { it.copy(message = e.message ?: "Failed") } }
+        refresh()
+    }
+
+    fun setSeverity(severity: Severity) = act { c.incidentRepository.updateSeverity(incidentId, severity) }
+    fun setStatus(status: IncidentStatus) = act { c.incidentRepository.updateStatus(incidentId, status) }
+    fun markRecurringOf(otherId: String) = act { c.incidentRepository.markRecurring(incidentId, otherId) }
+    fun mergeWith(otherId: String) = act { c.incidentRepository.merge(listOf(incidentId, otherId)) }
+
+    fun toggleSplit(sourceKey: String) = _ui.update { it.copy(selectedForSplit = if (sourceKey in it.selectedForSplit) it.selectedForSplit - sourceKey else it.selectedForSplit + sourceKey) }
+
+    fun splitOut(onDone: (String?) -> Unit) {
+        val keys = _ui.value.selectedForSplit.toList()
         viewModelScope.launch {
-            incidentRepository.updateSeverity(incidentId, severity)
+            val created = try { c.incidentRepository.split(incidentId, keys) } catch (e: Exception) { null }
+            _ui.update { it.copy(selectedForSplit = emptySet()) }
             refresh()
+            onDone(created?.id)
         }
     }
 
-    fun setStatus(status: IncidentStatus) {
+    fun runTriage() {
+        val inc = _ui.value.incident ?: return
         viewModelScope.launch {
-            incidentRepository.updateStatus(incidentId, status)
-            refresh()
+            _ui.update { it.copy(busy = true, message = null) }
+            try { c.suggestionService.suggestTriage(inc) } catch (e: Exception) { _ui.update { it.copy(message = "AI triage failed: ${e.message}") } }
+            _ui.update { it.copy(busy = false) }
         }
     }
 
-    fun dismiss() {
+    fun runMergeSuggestions() {
+        val inc = _ui.value.incident ?: return
         viewModelScope.launch {
-            incidentRepository.dismiss(incidentId)
-            refresh()
+            _ui.update { it.copy(busy = true, message = null) }
+            try {
+                val n = c.suggestionService.suggestMerges(inc.projectId).size
+                _ui.update { it.copy(message = if (n == 0) "No merge candidates found" else "$n merge suggestion(s) added") }
+            } catch (e: Exception) { _ui.update { it.copy(message = "AI merge check failed: ${e.message}") } }
+            _ui.update { it.copy(busy = false) }
         }
     }
 
-    fun markRecurringOf(otherIncidentId: String) {
-        viewModelScope.launch {
-            incidentRepository.markRecurring(incidentId, otherIncidentId)
-            refresh()
-        }
-    }
-
-    fun mergeWith(otherIncidentId: String) {
-        viewModelScope.launch {
-            incidentRepository.merge(listOf(incidentId, otherIncidentId))
-            refresh()
-        }
-    }
-
-    fun splitOut(sourceKeys: List<String>) {
-        viewModelScope.launch {
-            incidentRepository.split(incidentId, sourceKeys)
-            refresh()
-        }
-    }
-
-    class Factory(
-        private val incidentId: String,
-        private val incidentRepository: IncidentRepository,
-        private val signalRepository: SignalRepository,
-    ) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            @Suppress("UNCHECKED_CAST")
-            return IncidentDetailViewModel(incidentId, incidentRepository, signalRepository) as T
-        }
-    }
+    fun accept(id: String) = act { c.suggestionService.accept(id) }
+    fun reject(id: String) = act { c.suggestionService.reject(id) }
+    fun consumeMessage() = _ui.update { it.copy(message = null) }
 }

@@ -9,6 +9,5 @@
 .cxx
 local.properties
 /app/build
-/app/schemas
 *.hprof
 .kotlin/

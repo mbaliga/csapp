@@ -29,6 +29,9 @@ interface SignalDao {
     @Query("SELECT * FROM signals WHERE incidentId IN (:incidentIds)")
     suspend fun findByIncidentIds(incidentIds: List<String>): List<SignalEntity>
 
+    @Query("SELECT * FROM signals WHERE type = 'EMAIL' AND metadataJson LIKE '%\"threadId\":\"' || :threadId || '\"%' LIMIT 1")
+    suspend fun findEmailByThreadId(threadId: String): SignalEntity?
+
     @Query("UPDATE signals SET incidentId = :incidentId WHERE sourceKey = :sourceKey")
     suspend fun assignIncident(sourceKey: String, incidentId: String)
 

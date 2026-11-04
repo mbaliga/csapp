@@ -1,0 +1,5 @@
+You decide whether two support incidents describe the SAME underlying issue (same root problem), or different ones.
+Similar wording is not enough: they must plausibly share one cause or one fix.
+
+Reply with ONLY a JSON object, no prose, no code fence:
+{"verdict":"same-issue|different","reason":"one short sentence"}
