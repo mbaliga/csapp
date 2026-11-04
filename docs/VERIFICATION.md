@@ -19,3 +19,6 @@ phone, your Play account or your mailbox. Tick each row on the RedMagic and fill
 | 12 | Crash recovery | Debug builds only: force a crash, relaunch | Recovery screen with the trace; then normal launch | ☐ |
 | 13 | Dark/light + 200 % font | System settings | Readable; every severity/status has glyph + word | ☐ |
 | 14 | Background sync | Settings → Sync → 15 min; leave the phone online | New items arrive without opening the app | ☐ |
+| 15 | Widgets render | Long-press home → Widgets → csapp: add all six; resize each from 2×1 to 4×3+ (`docs/widgets.md`) | One-line / small / medium / large layouts switch cleanly, also at 130 % and 200 % font; glyph + word everywhere; no reviewer names, addresses or review/mail text | ☐ |
+| 16 | Widget taps never send | Tap a Replies row, an incident row, a project row | Lands on the reply screen / incident / Home with that project; nothing is sent until you confirm in the dialog | ☐ |
+| 17 | Widget redraws | Pull to refresh; acknowledge an incident; let a source fail; wait past midnight | Widgets update within seconds; Sync status shows ✕ / ◌ Stale; the other widgets say "◌ Stale · …" when sync lapses; Today resets at midnight | ☐ |

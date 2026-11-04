@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Picker preview (API < 31) for the list widgets: a header and three two-line rows. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="180dp" android:height="150dp" android:viewportWidth="180" android:viewportHeight="150">
+    <path android:fillColor="#101016" android:pathData="M12,0h156a12,12 0,0 1,12 12v126a12,12 0,0 1,-12 12h-156a12,12 0,0 1,-12 -12v-126a12,12 0,0 1,12 -12z" />
+    <path android:fillColor="#8E7BFF" android:pathData="M14,12h70v6h-70z" />
+    <path android:fillColor="#EDEDF3" android:pathData="M14,32h130v8h-130zM14,72h120v8h-120zM14,112h140v8h-140z" />
+    <path android:fillColor="#9D9DAE" android:pathData="M14,46h90v6h-90zM14,86h100v6h-100zM14,126h80v6h-80z" />
+</vector>

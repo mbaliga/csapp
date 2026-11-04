@@ -78,6 +78,27 @@ class AppContainer(context: Context) {
     val pollCoordinator: com.mbaliga.csapp.data.sync.PollCoordinator by lazy {
         com.mbaliga.csapp.data.sync.PollCoordinator(
             projectRepository, gitHubIssuePollRepository, playReviewRepository, mailPollRepository, incidentRepository, credentialStore,
+            health = pollHealthStore,
+        )
+    }
+
+    /**
+     * Per-channel sync outcomes for the "Sync status" widget. Lives in noBackupFilesDir (never in a
+     * cloud backup); holds times and counts only.
+     */
+    val pollHealthStore: com.mbaliga.csapp.data.sync.PollHealthStore by lazy {
+        com.mbaliga.csapp.data.sync.PollHealthStore(
+            java.io.File(appContext.noBackupFilesDir, "poll_health.json"),
+            onChanged = { com.mbaliga.csapp.widget.CsWidgets.requestRefresh() },
+        )
+    }
+
+    /** Read-only source of everything the home-screen widgets show. */
+    val widgetSnapshotLoader: com.mbaliga.csapp.widget.WidgetSnapshotLoader by lazy {
+        com.mbaliga.csapp.widget.WidgetSnapshotLoader(
+            database.widgetDao(),
+            pollHealth = { pollHealthStore.read() },
+            pollIntervalMinutes = { settingsStore.pollIntervalMinutes },
         )
     }
 

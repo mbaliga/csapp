@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Below API 31 a fixed radius; values-v31 uses the launcher's own widget radius. -->
+    <dimen name="widget_radius">16dp</dimen>
+    <dimen name="widget_padding">12dp</dimen>
+    <dimen name="widget_padding_small">10dp</dimen>
+    <!-- Vertical padding of the one-line layout used below the small size (e.g. 2x1 in landscape). -->
+    <dimen name="widget_padding_tiny">8dp</dimen>
+    <!-- Every tappable row is at least a 48dp touch target. -->
+    <dimen name="widget_touch_min">48dp</dimen>
+</resources>

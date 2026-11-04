@@ -62,6 +62,8 @@ class SettingsViewModel(private val c: AppContainer) : ViewModel() {
     fun setInterval(minutes: Int) {
         c.settingsStore.pollIntervalMinutes = minutes
         PollScheduler.schedule(c.appContext, minutes, replace = true)
+        // The Sync status widget's "stale" threshold and footer follow the interval.
+        com.mbaliga.csapp.widget.CsWidgets.requestRefresh()
         _ui.value = load().copy(status = "Sync every $minutes min (Android may batch it)")
     }
 

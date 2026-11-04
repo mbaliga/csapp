@@ -1,3 +1,133 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">csapp</string>
+
+    <!-- Home-screen widgets. A home screen is public: titles and counts only, never reviewer names,
+         email addresses, or review / mail text. Glyph + word for every state; colour never alone. -->
+    <string name="widget_loading">Loading…</string>
+    <!-- How fresh the synced data is (the last pass in which every source of every set-up channel worked). -->
+    <string name="widget_fresh_synced">Synced %1$s</string>
+    <string name="widget_fresh_stale">◌ Stale · %1$s</string>
+    <string name="widget_fresh_failing">◌ Stale · sync failing</string>
+    <string name="widget_fresh_stale_short">◌ Stale</string>
+    <string name="widget_fresh_never">○ Not synced yet</string>
+    <string name="widget_fresh_never_short">○ Not synced</string>
+    <string name="widget_value_label">%1$s %2$s</string>
+    <string name="widget_more" tools:ignore="PluralsCandidate">+%1$d more</string>
+    <string name="widget_join">%1$s · %2$s</string>
+    <string name="widget_count_of">%1$s: %2$s</string>
+    <string name="widget_opens_app">Opens %1$s</string>
+    <string name="widget_error_title">Can\'t read the data</string>
+    <string name="widget_error_body">Open %1$s to see what went wrong. Nothing was changed.</string>
+    <string name="widget_first_run_title">No sources set up yet</string>
+    <string name="widget_first_run_body">Add a Play app, a GitHub repo or a mail filter to a project.</string>
+    <string name="widget_untitled">Untitled incident</string>
+    <string name="widget_title_withheld_review">Title hidden: it quotes a Play review</string>
+    <string name="widget_title_withheld_email">Title hidden: it quotes an email</string>
+    <string name="widget_title_withheld_address">Title hidden: it contains an email address</string>
+    <string name="widget_title_withheld_unverified">Title hidden: it may quote a review or an email</string>
+    <string name="widget_n_open" tools:ignore="PluralsCandidate">%1$d open</string>
+    <string name="widget_ch_play">Play</string>
+    <string name="widget_ch_github">GitHub</string>
+    <string name="widget_ch_email">Email</string>
+    <string name="widget_ch_manual">Manual</string>
+    <plurals name="widget_signals">
+        <item quantity="one">%d signal</item>
+        <item quantity="other">%d signals</item>
+    </plurals>
+    <plurals name="widget_ch_play_n">
+        <item quantity="one">%d Play review</item>
+        <item quantity="other">%d Play reviews</item>
+    </plurals>
+    <plurals name="widget_ch_github_n">
+        <item quantity="one">%d GitHub issue</item>
+        <item quantity="other">%d GitHub issues</item>
+    </plurals>
+    <plurals name="widget_ch_email_n">
+        <item quantity="one">%d email</item>
+        <item quantity="other">%d emails</item>
+    </plurals>
+    <plurals name="widget_ch_manual_n">
+        <item quantity="one">%d manual signal</item>
+        <item quantity="other">%d manual signals</item>
+    </plurals>
+
+    <!-- Open incidents (stat) -->
+    <string name="widget_open_name">Open incidents</string>
+    <string name="widget_open_desc">Open and acknowledged incidents across your projects, counted by severity. Opens the app; changes nothing.</string>
+    <string name="widget_open_scope">Open or acknowledged, all projects</string>
+    <string name="widget_open_empty">Nothing open</string>
+    <plurals name="widget_open_count">
+        <item quantity="one">open incident</item>
+        <item quantity="other">open incidents</item>
+    </plurals>
+
+    <!-- Incidents (list) -->
+    <string name="widget_list_name">Incidents</string>
+    <string name="widget_list_desc">The most severe open incidents, with severity, status and project. Titles only. Tap one to open it.</string>
+    <string name="widget_list_empty">Nothing open</string>
+
+    <!-- Top incident (card) -->
+    <string name="widget_top_name">Top incident</string>
+    <string name="widget_top_desc">The most severe open incident: its title, severity, status and where its signals came from. Tap to open it.</string>
+    <string name="widget_top_empty">Nothing open. The most severe incident will show here.</string>
+    <string name="widget_top_first_seen">First seen %1$s</string>
+    <string name="widget_top_updated">updated %1$s</string>
+    <string name="widget_top_recurring">↻ Recurring</string>
+
+    <!-- Replies (stat / list). Read-only: opens the app, never sends, approves or changes a reply. -->
+    <string name="widget_replies_name">Replies</string>
+    <string name="widget_replies_desc">Play replies that failed to send or still wait for your confirmation. Opens the app; never sends, approves or changes a reply.</string>
+    <string name="widget_replies_empty">No replies waiting on you</string>
+    <string name="widget_reply_failed">✕ Failed to send</string>
+    <string name="widget_reply_sending">⋯ Send not finished</string>
+    <string name="widget_reply_awaiting">✎ Waiting for your confirmation</string>
+    <string name="widget_reply_ai">✧ AI drafts to review</string>
+    <string name="widget_reply_rated">%1$d★ review</string>
+    <string name="widget_reply_unrated">Play review</string>
+    <string name="widget_reply_never_sends">Opens the reply screen. Sending still asks you to confirm.</string>
+    <plurals name="widget_replies_count">
+        <item quantity="one">reply needs you</item>
+        <item quantity="other">replies need you</item>
+    </plurals>
+
+    <!-- Sync status (list) -->
+    <string name="widget_sync_name">Sync status</string>
+    <string name="widget_sync_desc">When GitHub, Play and mail were last polled, and whether it worked. Opens the app.</string>
+    <string name="widget_sync_github">GitHub</string>
+    <string name="widget_sync_play">Play</string>
+    <string name="widget_sync_mail">Mail</string>
+    <string name="widget_sync_ok">✓ OK · %1$s</string>
+    <string name="widget_sync_failed" tools:ignore="PluralsCandidate">✕ %1$d of %2$d failed · %3$s</string>
+    <string name="widget_sync_stale">◌ Stale · last poll %1$s</string>
+    <string name="widget_sync_never">○ Not polled yet</string>
+    <string name="widget_sync_not_set_up">— Not set up</string>
+    <string name="widget_sync_last_ok">all OK %1$s</string>
+    <string name="widget_sync_last_ok_never">never all OK</string>
+    <string name="widget_sync_every">Polls every %1$d min while online</string>
+    <string name="widget_sync_lead">Sync · %1$s</string>
+    <string name="widget_sync_all_ok">✓ All sources OK</string>
+    <string name="widget_sync_some_stale">◌ Stale: no recent poll</string>
+    <string name="widget_sync_none">— No sources set up</string>
+    <plurals name="widget_sync_sources">
+        <item quantity="one">%d source</item>
+        <item quantity="other">%d sources</item>
+    </plurals>
+    <plurals name="widget_sync_channels_failed">
+        <item quantity="one">✕ %d channel failed</item>
+        <item quantity="other">✕ %d channels failed</item>
+    </plurals>
+
+    <!-- Today (stat) -->
+    <string name="widget_today_name">Today</string>
+    <string name="widget_today_desc">Signals whose own source time is today, by channel and project. Opens the app.</string>
+    <string name="widget_today_since">since %1$s</string>
+    <string name="widget_today_empty">Nothing new today</string>
+    <plurals name="widget_today_count">
+        <item quantity="one">signal today</item>
+        <item quantity="other">signals today</item>
+    </plurals>
+    <plurals name="widget_ungrouped">
+        <item quantity="one">%d signal not yet grouped</item>
+        <item quantity="other">%d signals not yet grouped</item>
+    </plurals>
 </resources>

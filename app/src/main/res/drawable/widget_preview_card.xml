@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Picker preview (API < 31) for the Top incident card: a title, marks and a meta line. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp" android:height="88dp" android:viewportWidth="250" android:viewportHeight="110">
+    <path android:fillColor="#101016" android:pathData="M12,0h226a12,12 0,0 1,12 12v86a12,12 0,0 1,-12 12h-226a12,12 0,0 1,-12 -12v-86a12,12 0,0 1,12 -12z" />
+    <path android:fillColor="#8E7BFF" android:pathData="M14,12h70v6h-70z" />
+    <path android:fillColor="#EDEDF3" android:pathData="M14,30h200v10h-200zM14,46h150v10h-150z" />
+    <path android:fillColor="#EDEDF3" android:pathData="M14,68h110v8h-110z" />
+    <path android:fillColor="#9D9DAE" android:pathData="M14,86h90v6h-90z" />
+</vector>

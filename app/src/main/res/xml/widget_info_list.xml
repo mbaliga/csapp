@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Resizable from 2x1 up; a one-line summary plus small / medium / large layouts, chosen by size and font scale. Pushed updates only
+     (updatePeriodMillis 0): the app redraws when its data changes. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:minWidth="250dp"
+    android:minHeight="180dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="40dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="3"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/widget_loading"
+    android:previewLayout="@layout/widget_preview_list"
+    android:previewImage="@drawable/widget_preview_list"
+    android:description="@string/widget_list_desc"
+    tools:targetApi="s" />

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widget layout (RemoteViews: LinearLayout + TextView only). See docs/widgets.md. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@drawable/widget_bg"
+    android:clipToOutline="true"
+    android:padding="@dimen/widget_padding_small"
+    android:gravity="center_vertical"
+    tools:ignore="UnusedAttribute">
+
+    <TextView
+        android:id="@+id/w_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"
+        android:textColor="@color/widget_text"
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textAlignment="viewStart" />
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginStart="10dp">
+        <TextView
+            android:id="@+id/w_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@color/widget_text"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textAlignment="viewStart" />
+        <TextView
+            android:id="@+id/w_caption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="@color/widget_muted"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textAlignment="viewStart" />
+        <TextView
+            android:id="@+id/w_asof"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="@color/widget_muted"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textAlignment="viewStart"
+            android:visibility="gone" />
+    </LinearLayout>
+</LinearLayout>

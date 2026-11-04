@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widget colours, night. Hyle dark tokens (ui/theme/HyleTokens.kt). -->
+<resources>
+    <color name="widget_surface">#FF101016</color>
+    <color name="widget_text">#FFEDEDF3</color>
+    <color name="widget_muted">#FF9D9DAE</color>
+    <color name="widget_accent">#FF8E7BFF</color>
+    <color name="widget_outline">#FF2B2B38</color>
+</resources>

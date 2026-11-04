@@ -1,6 +1,7 @@
 package com.mbaliga.csapp.ui.nav
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -23,9 +24,31 @@ import com.mbaliga.csapp.ui.reply.ReplyViewModel
 import com.mbaliga.csapp.ui.settings.SettingsScreen
 import com.mbaliga.csapp.ui.settings.SettingsViewModel
 import com.mbaliga.csapp.ui.vmFactory
+import com.mbaliga.csapp.widget.WidgetTap
 
 @Composable
-fun CsAppNavHost(container: AppContainer, nav: NavHostController = rememberNavController()) {
+fun CsAppNavHost(
+    container: AppContainer,
+    nav: NavHostController = rememberNavController(),
+    widgetTap: WidgetTap? = null,
+    onWidgetTapHandled: () -> Unit = {},
+) {
+    // A home-screen widget tap only ever opens a screen; it never acts on anything.
+    LaunchedEffect(widgetTap) {
+        val tap = widgetTap ?: return@LaunchedEffect
+        nav.popBackStack(Destinations.HOME, inclusive = false)
+        when (tap) {
+            // MainActivity is exported, so the id may come from anywhere (or name a project archived
+            // since the widget was drawn): select only an existing, active project.
+            is WidgetTap.Home -> tap.projectId
+                ?.takeIf { pid -> container.projectRepository.find(pid)?.archived == false }
+                ?.let { container.selectProject(it) }
+            is WidgetTap.Incident -> nav.navigate(Destinations.incidentDetail(tap.incidentId))
+            is WidgetTap.Reply -> nav.navigate(Destinations.reply(tap.sourceKey))
+            WidgetTap.Projects -> nav.navigate(Destinations.PROJECTS)
+        }
+        onWidgetTapHandled()
+    }
     NavHost(navController = nav, startDestination = Destinations.HOME) {
         composable(Destinations.HOME) {
             val vm: HomeViewModel = viewModel(factory = vmFactory { HomeViewModel(container) })
