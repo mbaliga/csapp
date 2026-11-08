@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.mbaliga.csapp"
+    namespace = "com.asoc.ping"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.mbaliga.csapp"
+        applicationId = "com.asoc.ping"
         minSdk = 26
         targetSdk = 36
         versionCode = 2

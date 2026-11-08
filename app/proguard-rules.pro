@@ -8,11 +8,11 @@
 -keepclasseswithmembers class kotlinx.serialization.json.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
--keep,includedescriptorclasses class com.mbaliga.csapp.**$$serializer { *; }
--keepclassmembers class com.mbaliga.csapp.** {
+-keep,includedescriptorclasses class com.asoc.ping.**$$serializer { *; }
+-keepclassmembers class com.asoc.ping.** {
     *** Companion;
 }
--keepclasseswithmembers class com.mbaliga.csapp.** {
+-keepclasseswithmembers class com.asoc.ping.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 
@@ -20,14 +20,14 @@
 -keep class * extends androidx.room.RoomDatabase
 
 # Room entities / DAOs are reflected on by the generated code
--keep class com.mbaliga.csapp.data.db.entities.** { *; }
+-keep class com.asoc.ping.data.db.entities.** { *; }
 -keep class * extends androidx.room.RoomDatabase { *; }
 
 # JSON DTOs decoded by kotlinx.serialization
--keep class com.mbaliga.csapp.data.play.** { *; }
--keep class com.mbaliga.csapp.data.github.** { *; }
--keep class com.mbaliga.csapp.data.export.** { *; }
+-keep class com.asoc.ping.data.play.** { *; }
+-keep class com.asoc.ping.data.github.** { *; }
+-keep class com.asoc.ping.data.export.** { *; }
 
 # Versioned AI prompts are read as Java resources by name
--keepclassmembers class com.mbaliga.csapp.domain.ai.ResourcePrompts { *; }
+-keepclassmembers class com.asoc.ping.domain.ai.ResourcePrompts { *; }
 -dontwarn org.slf4j.**

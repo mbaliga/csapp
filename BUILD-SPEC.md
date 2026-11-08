@@ -26,7 +26,7 @@ A working V1 is already merged on `main` (Play + GitHub ingestion, Jaccard clust
 8. **Linked libraries permissive-only** (Apache/MIT/BSD/ISC/CC0). No Jakarta Mail / JavaMail (EPL/GPL). Email is implemented with an in-house minimal IMAP client and the Gmail REST API over plain HTTP (§3.4).
 9. **Colour never carries meaning alone** (the owner is red-green colourblind). Severity and status: glyph + label + luminance on the Hyle palette (§6). The current green Material scheme is replaced.
 10. **Anti-overclaim ladder** in every WP report: `code-complete` / `verified` / `ready-for-owner-review`. On-device behaviour is **owner-verified only**; mark `NEEDS-DEVICE-VALIDATION`. Stubbed, not faked: a path that cannot run here fails with a typed error, never a fake success.
-11. **Do not rename.** Working name stays `csapp`, `applicationId` stays `com.mbaliga.csapp` (an existing ID keeps its ID). The product name is an open owner question; keep the string resource `app_name` as the single place it lives.
+11. **Renamed (owner decision, Nov 2026).** The product is **Ping**; `applicationId` and package are `com.asoc.ping` (was `com.mbaliga.csapp`, never published). Internal identifiers deliberately stay `csapp` (repo and Gradle root name, `csapp.db`, prefs and keystore names, hub-contract `producer.app`). The product name lives only in the string resource `app_name`.
 12. **Do not add the Hyle Design System submodule.** Copy token values into `ui/theme/HyleTokens.kt` (§6). `shared-libraries` submodule stays, used only for `dev.aarso:crash-recovery`.
 
 ---

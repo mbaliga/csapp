@@ -1,17 +1,12 @@
 # images/
 
-Nothing here yet. A debug build exists (`dist/csapp-1.0.0-debug.apk`), so screenshots
+Only icon.png so far. A debug build exists (`dist/csapp-1.0.0-debug.apk`), so screenshots
 can be taken once the app has run on a phone (`docs/VERIFICATION.md`).
+
+`icon.png` is the 512x512 Ping artwork supplied by the owner (rounded corners baked in).
 
 Still needed:
 
-- `icon.png` 512x512, 32-bit PNG, up to 1024 KB (the icon may have alpha; the feature
-  graphic and screenshots may not; Play Console help, "Add preview assets"). The launcher
-  icon is only adaptive-icon XML (`app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml`), so
-  the 512 px PNG has to be rendered from its background and foreground layers together
-  (`drawable/ic_launcher_background.xml`, a solid `#07070A`, and
-  `drawable/ic_launcher_foreground.xml`). Keep the hexagon inside the central 66 of 108
-  units, about 313 px of 512.
 - `featureGraphic.png` 1024x500, no alpha
 - `phoneScreenshots/` an incident cluster, the triage view, the confirm-before-send
   dialog, and the AI suggestion with its On-device or Cloud badge

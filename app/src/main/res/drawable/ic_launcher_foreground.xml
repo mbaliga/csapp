@@ -1,7 +1,0 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <!-- a cell: hexagon ring with a nucleus -->
-    <path android:fillColor="#8E7BFF" android:pathData="M54,22 L80,37 L80,71 L54,86 L28,71 L28,37 Z" />
-    <path android:fillColor="#07070A" android:pathData="M54,32 L71,42 L71,66 L54,76 L37,66 L37,42 Z" />
-    <path android:fillColor="#CCEC75" android:pathData="M54,44 a10,10 0 1,0 0.01,0 Z" />
-</vector>

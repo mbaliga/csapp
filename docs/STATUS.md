@@ -20,7 +20,7 @@ Ladder: `code-complete` → `verified` → `ready-for-owner-review`. On-device b
 - **Quota guard** is a persisted fixed-window counter per package/method, not a token bucket (same limits, simpler to prove).
 - **Roborazzi screenshot tests** were not added (no emulator/Compose screenshot infra in this environment). The glyph+label rule is
   enforced by `MarksTest` instead.
-- **Gmail OAuth** uses the redirect `com.mbaliga.csapp:/oauth2redirect`; Google may demand the reversed-client-id scheme for
+- **Gmail OAuth** uses the redirect `com.asoc.ping:/oauth2redirect`; Google may demand the reversed-client-id scheme for
   Android client types. Unverified until a real consent flow runs.
 - Licence: kept Apache-2.0; `claude/asystemofcells-redesign-s6yv4c` (PolyForm) left unmerged pending the owner's call (spec §2.2).
 - Debug builds embed the exported Room schema JSONs as assets (needed by Room's migration test under Robolectric); release does not.

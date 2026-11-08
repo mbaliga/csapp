@@ -1,6 +1,6 @@
-Nothing is sent to a customer unless you read it and confirm it. CS App has no auto-reply, no scheduled reply, no analytics, no ads and no account of ours. There is no server of ours between your phone and the services you connect.
+Nothing is sent to a customer unless you read it and confirm it. Ping has no auto-reply, no scheduled reply, no analytics, no ads and no account of ours. There is no server of ours between your phone and the services you connect.
 
-CS App is a support console for people who ship apps. It gathers Play Store reviews, GitHub issues and support email into one queue per project, groups similar reports into incidents, and lets you triage from your phone and reply to Play reviews.
+Ping is a support console for people who ship apps. It gathers Play Store reviews, GitHub issues and support email into one queue per project, groups similar reports into incidents, and lets you triage from your phone and reply to Play reviews.
 
 WHAT IT READS
 • Play Store reviews, through the Google Play Developer API with your own service account key. The API returns about the last week of reviews.
@@ -19,7 +19,7 @@ INCIDENTS
 REPLIES
 • Play reviews: write a reply of up to 350 characters, check the exact text in a confirmation dialog, then send. You can edit a sent reply and see what changed before it replaces the old one.
 • Every reply sent to Google is logged with its outcome, and a request counter holds back calls before they reach Google's hourly and daily limits.
-• Email: Reply in mail app opens your own mail app with the sender, subject and start of the message filled in. CS App never sends email.
+• Email: Reply in mail app opens your own mail app with the sender, subject and start of the message filled in. Ping never sends email.
 • GitHub issues: there is no reply from the app.
 
 OPTIONAL AI SUGGESTIONS

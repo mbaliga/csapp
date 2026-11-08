@@ -1,4 +1,4 @@
-# CS App — Play Console answer sheet
+# Ping — Play Console answer sheet
 
 > Only the **deltas** from `Personal-Tracker/store/HOUSE_DEFAULTS.md`.
 >
@@ -8,13 +8,13 @@
 
 | | |
 |---|---|
-| applicationId | `com.mbaliga.csapp` (permanent once published) |
+| applicationId | `com.asoc.ping` (permanent once published) |
 | Version | `1.0.0` (versionCode `2`) |
 | minSdk / targetSdk / compileSdk | `26` / `36` / `36` |
 | Category | **Business** |
-| Contact email | `csapp@asystemofcells.com` |
-| Website | `https://asystemofcells.com/csapp` |
-| Privacy policy | `https://asystemofcells.com/csapp/privacy` (working copy: `privacy-policy.md`) |
+| Contact email | `ping@asystemofcells.com` |
+| Website | `https://asystemofcells.com/ping` |
+| Privacy policy | `https://asystemofcells.com/ping/privacy` (working copy: `privacy-policy.md`) |
 
 ## Where this stands
 
@@ -89,12 +89,13 @@ text" though issue and mail text are sent too.
 
 ### 3. Owner decisions this sheet does not make
 
-- **Product name.** The store title is `CS App`; the launcher label is `csapp`
-  (`strings.xml`), and `csapp` is also hard-coded in Home, Settings, the mail hint, the
-  crash-recovery label and the export `producer.app`. Rule 11 (`BUILD-SPEC.md`,
-  `CLAUDE.md`) says do not rename and keep the name in `app_name` only, so a rename needs an
-  owner override of that rule plus code edits. `Personal-Tracker/NAMES.md` records no
-  decision.
+- **Product name.** Renamed to **Ping** by the owner on 2026-11-08, with the new ID
+  `com.asoc.ping` (was `com.mbaliga.csapp`, never published). `app_name`, the Home, Settings
+  and mail-hint text, the crash-recovery label and the store title all say Ping. `csapp`
+  deliberately remains in internal identifiers: the repo and Gradle root name, `csapp.db`, the
+  prefs and keystore names, and the export `producer.app` (a hub-contract value). The hosted
+  URLs and mailbox slug above (`/ping`, `ping@`) are proposals: confirm them before the page
+  goes live. The debug APK in `dist/` predates the rename and still carries the old ID.
 - **Public listing or not.** It is a personal developer tool. Play's internal testing is
   optional and does not count toward the closed-test rule below. Sideload is still open:
   Android developer verification is enforced from 2026-09-30 only for installs from
@@ -114,12 +115,12 @@ text" though issue and mail text are sent too.
 
 ### 4. Outside the repo, not checked
 
-`https://asystemofcells.com/csapp/privacy` returning 200 for a logged-out reader, the
-`csapp@asystemofcells.com` alias delivering, and the Play Console account state.
+`https://asystemofcells.com/ping/privacy` returning 200 for a logged-out reader, the
+`ping@asystemofcells.com` alias delivering, and the Play Console account state.
 
 ## App access
 
-CS App cannot answer "all functionality is available without special access". Choose
+Ping cannot answer "all functionality is available without special access". Choose
 **All or some functionality is restricted**. Google requires reviewer credentials that are
 reusable, valid regardless of location, bypass 2FA and unlock all functionality (help
 answer 15748846), so say what each credential unlocks:
@@ -179,7 +180,7 @@ target audience **18 and over**, news / COVID / government / financial / health 
 | `INTERNET` | app manifest | Play Developer API, GitHub API, your mail server (IMAP) or Gmail, Google sign-in and token endpoints, and the AI provider you choose |
 | `ACCESS_NETWORK_STATE` | app manifest, and `work-runtime` 2.9.1 (it would still merge if the app's line were removed) | Used through WorkManager's connected-network constraint. No app code reads network state, and pull-to-refresh does not check connectivity. |
 | `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, `FOREGROUND_SERVICE` | merged from `work-runtime` 2.9.1 | The periodic sync. Seen in the debug APK; the release manifest has not been built. |
-| `com.mbaliga.csapp.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | merged from `androidx.core` 1.13.1 | App-private signature permission |
+| `com.asoc.ping.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | merged from `androidx.core` 1.13.1 | App-private signature permission |
 
 All are normal permissions: no declaration form and no demo video. No foreground service
 type is set and nothing starts the foreground service, the boot receiver is disabled,
@@ -188,7 +189,7 @@ the release AAB: the debug APK also carries `debuggable` and the exported
 `PreviewActivity`, which should be absent from release.
 
 Exported components the app declares: `MainActivity` (launcher only, ignores its intent)
-and `OAuthRedirectActivity` (custom scheme `com.mbaliga.csapp`; the code checks a random
+and `OAuthRedirectActivity` (custom scheme `com.asoc.ping`; the code checks a random
 `state` and uses PKCE, so a hijacked redirect cannot redeem the code). The `FileProvider`
 is not exported. Three library components are also exported, each permission-guarded: WorkManager's
 `SystemJobService` (`BIND_JOB_SERVICE`) and `DiagnosticsReceiver` (`DUMP`), and
@@ -220,14 +221,14 @@ exported with no permission.
   "Yes, in a limited sense" is not a valid yes/no answer.
 - That **No** is a judgment, not a Google finding. Google's UGC policy also reaches
   "specialized browsers or clients to direct users to a UGC platform" (help answer
-  9876937), and CS App is a client for GitHub issues and Play reviews. It has no user-to-user
+  9876937), and Ping is a client for GitHub issues and Play reviews. It has no user-to-user
   posting or sharing and no report or block UI. Its only outbound publication is the
   developer reply to a Play review, sent after the operator confirms the exact text, and
   fetched text is shown only to the one operator. The IARC wording is visible only in Console; the rating is IARC's output.
   Expect Everyone, do not promise it.
 - AI-generated content policy: Google requires in-app reporting or flagging for apps that
   generate content with AI, and scopes out productivity apps that use AI to improve an
-  existing feature, such as AI-suggested email drafts. CS App's AI only writes pending
+  existing feature, such as AI-suggested email drafts. Ping's AI only writes pending
   suggestions a human accepts, and there is no report or flag UI. Google's pages show no
   separate generative-AI declaration. Unresolved; check what Console asks.
 
@@ -236,10 +237,10 @@ exported with no permission.
 - The scope is `gmail.readonly`, a Google **restricted scope**. The user supplies their
   own OAuth client ID (the app ships none). Google's API Services User Data Policy allows
   transfer of such data only to provide user-facing features that are visible in the UI,
-  with consent. CS App forwards the full subject and the first 600 characters of the body
+  with consent. Ping forwards the full subject and the first 600 characters of the body
   of up to eight reports per incident to third-party AI providers, including through the
   background switch. Read that policy before any public listing that includes Gmail.
-- The redirect `com.mbaliga.csapp:/oauth2redirect` is unverified (`VERIFICATION.md` row 5).
+- The redirect `com.asoc.ping:/oauth2redirect` is unverified (`VERIFICATION.md` row 5).
   Google may require the reversed-client-id scheme for Android client types.
 - A user-owned client in "Testing" status gets short-lived refresh tokens (about 7 days;
   check Google's current terms).
@@ -298,7 +299,7 @@ screen on an R8 release build before putting it back.
 
 ## Stale elsewhere (not changed here)
 
-`Personal-Tracker`: `NAMES.md` (CS App row says the source never compiled),
+`Personal-Tracker`: `NAMES.md` (Ping row says the source never compiled),
 `store/APP_MATRIX.md` (csapp "0.1.0 (1), Unbuildable"), `store/RUNBOOK.md` (csapp
 targetSdk 34), `store/HOUSE_DEFAULTS.md` 3.8 ("every network call in every app is HTTPS"
 is false for csapp) and the section 2 csapp exception (omits mail and cloud AI).

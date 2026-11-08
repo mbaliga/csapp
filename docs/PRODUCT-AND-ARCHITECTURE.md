@@ -8,7 +8,7 @@ The load-bearing design decision is that **nothing is sent to a user without an 
 confirmation**, and **clustering is deterministic** — re-running it on the same data never mints a
 new incident id or shuffles assignments.
 
-- **Package**: `com.mbaliga.csapp`
+- **Package**: `com.asoc.ping`
 - **Version**: 0.1.0 · minSdk 26 · targetSdk 34
 - **UI**: Jetpack Compose, Material 3, Navigation Compose
 - **Storage**: Room (SQLite), `EncryptedSharedPreferences` for credentials

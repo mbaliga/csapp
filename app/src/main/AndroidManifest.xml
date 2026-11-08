@@ -25,7 +25,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Gmail OAuth (PKCE) redirect: com.mbaliga.csapp:/oauth2redirect -->
+        <!-- Gmail OAuth (PKCE) redirect: com.asoc.ping:/oauth2redirect -->
         <activity
             android:name=".OAuthRedirectActivity"
             android:exported="true"
@@ -36,7 +36,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="com.mbaliga.csapp" android:path="/oauth2redirect" />
+                <data android:scheme="com.asoc.ping" android:path="/oauth2redirect" />
             </intent-filter>
         </activity>
 

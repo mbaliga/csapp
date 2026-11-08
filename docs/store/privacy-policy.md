@@ -1,11 +1,11 @@
-# Privacy Policy — CS App
+# Privacy Policy — Ping
 
 > **Draft for owner review.** Working copy of the hosted page. It describes what the code
 > of `main` @ `080d588` does, read on 2026-11-04, not a release build. Re-check it against
 > the release you publish, and against `play-console.md` (the Data safety answers must
 > agree with this page).
 >
-> Intended hosted URL: **https://asystemofcells.com/csapp/privacy**.
+> Intended hosted URL: **https://asystemofcells.com/ping/privacy**.
 >
 > If Gmail is cut from the Play build, delete every item marked `<!-- gmail -->` and every
 > other mention of Gmail or Google sign-in. Delete the sentence after
@@ -13,7 +13,7 @@
 
 **Last updated: 4 November 2026**
 
-CS App is a support console for Android (package `com.mbaliga.csapp`), made by
+Ping is a support console for Android (package `com.asoc.ping`), made by
 A System of Cells. It is a tool for developers managing their own apps.
 
 ## The short version
@@ -182,7 +182,7 @@ the set-aside copy described under Crash reports, and the temporary Share copy, 
 Android may clear. Content a customer later deletes at its source stays on your phone. In
 version 1.0.0 you can remove credentials, mailboxes and project sources from inside the app,
 but you cannot delete fetched content, suggestions or the reply log from inside it. That is
-removed by Android's Clear storage for CS App, or by uninstalling. Neither removes files you
+removed by Android's Clear storage for Ping, or by uninstalling. Neither removes files you
 saved or shared out of the app, or access you granted. To revoke that, revoke the token,
 service account, <!-- gmail -->Gmail access or mailbox app password at the service that
 issued it.
@@ -194,14 +194,14 @@ issued it.
 | `INTERNET` | To reach the Google Play Developer API, GitHub, your mail server, Google's token endpoint (and <!-- gmail -->Google sign-in), and your chosen AI provider |
 | `ACCESS_NETWORK_STATE` | Lets background sync run only when the phone is online |
 | `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, `FOREGROUND_SERVICE` | Added by the Android WorkManager library for the periodic sync. The app starts no foreground service and runs no work of its own at boot |
-| `com.mbaliga.csapp.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | Added by AndroidX Core. A signature-level permission, granted by Android only to apps signed with the same key as CS App; it gives no access to your data |
+| `com.asoc.ping.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | Added by AndroidX Core. A signature-level permission, granted by Android only to apps signed with the same key as Ping; it gives no access to your data |
 
 The app shows no notifications and does not ask for location, contacts, storage, camera or
 microphone.
 
 ## Children
 
-CS App is a developer tool and is not directed at children. A System of Cells collects no
+Ping is a developer tool and is not directed at children. A System of Cells collects no
 personal information from anyone, including children.
 
 ## Changes
@@ -211,5 +211,5 @@ policy is published at this same URL.
 
 ## Contact
 
-CS App is made by **A System of Cells**. Questions about this policy or the app:
-csapp@asystemofcells.com
+Ping is made by **A System of Cells**. Questions about this policy or the app:
+ping@asystemofcells.com
