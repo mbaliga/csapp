@@ -50,7 +50,7 @@ Clickable (program §9), so nothing below can be confirmed here.
 
 Portability: **common** = no imports, moves to `commonMain` unchanged · **JVM** = pure Kotlin with a few
 `java.*`/OkHttp types, fine on every JVM target and needing a seam for Kotlin/Native · **Android** = needs an
-actual per platform. LOC are measured per directory under `app/src/main/java/com/mbaliga/csapp/`.
+actual per platform. LOC are measured per directory under `app/src/main/java/com/asoc/ping/`.
 
 | Module / dir | Role | Portability | Approx LOC | Notes |
 |---|---|---|---|---|
@@ -125,7 +125,7 @@ code, and from the program's directives. Where a rule is only a program directiv
   Ubuntu Touch viewer adds a shape glyph beside each severity word.
 - **Registry drift is not propagated.** The repo has no Galaxy Store ingestion (`SignalType` is `PLAY_REVIEW`,
   `GITHUB_ISSUE`, `MANUAL`) and no Fonebrew reference (grep of the tree finds none). No step below depends on either (Q1).
-- **Out of scope** (program §0): changing Android behaviour, the package or `applicationId` (`com.mbaliga.csapp`),
+- **Out of scope** (program §0): changing Android behaviour, the package or `applicationId` (`com.asoc.ping`),
   or releasing anything. Android keeps `EncryptedCredentialStore`; security-crypto's alpha status is noted, not acted on.
 
 ## 4. Target matrix (owner's order)
@@ -220,7 +220,7 @@ package lanes on `main`/tags only, and calls F9's `kmp-matrix.yml` by SHA-pinned
    `markReplySent` directly). Done when it passes on `b38b3a5` and fails if a second production call is added.
 3. **Room schema export** (Q11): set `exportSchema = true` and `room.schemaDirectory`, commit the baseline `1.json`
    from Room 2.7.1. `.gitignore` currently ignores `/app/schemas`; remove that line in the same PR and commit the baseline
-   `app/schemas/com.mbaliga.csapp.data.db.AppDatabase/1.json` from Room 2.7.1. L1 moves the directory to `core/schemas`
+   `app/schemas/com.asoc.ping.data.db.AppDatabase/1.json` from Room 2.7.1. L1 moves the directory to `core/schemas`
    with the rest of `data/db`. Done when the schema file is reviewable in the PR.
 4. **Android V1 device smoke** by the owner, `NEEDS-DEVICE-VALIDATION` (Q12): nothing records csapp running on a
    device, and the restructure below moves every Android source path.
@@ -370,7 +370,7 @@ Master ids are in brackets; "csapp-local" means the program has no id. Proposals
 `docs/PRODUCT-AND-ARCHITECTURE.md` · `settings.gradle.kts` · `build.gradle.kts` · `gradle.properties` ·
 `app/build.gradle.kts` · `gradle/libs.versions.toml` · `gradle/wrapper/gradle-wrapper.properties` ·
 `app/src/main/AndroidManifest.xml` · `app/proguard-rules.pro` · `.github/workflows/ci.yml` ·
-`.github/workflows/cleanup-artifacts.yml` · `LICENSE` · `.gitignore` · under `app/src/main/java/com/mbaliga/csapp/`:
+`.github/workflows/cleanup-artifacts.yml` · `LICENSE` · `.gitignore` · under `app/src/main/java/com/asoc/ping/`:
 `CsAppApplication.kt`, `ui/MainActivity.kt`, `di/AppContainer.kt`, `data/credentials/CredentialStore.kt`,
 `data/credentials/EncryptedCredentialStore.kt`, `data/settings/AppSettingsStore.kt`,
 `data/export/IssuesManifestExporter.kt`, `data/export/IssuesManifestModel.kt`, `ui/export/ExportViewModel.kt`,
@@ -379,7 +379,7 @@ Master ids are in brackets; "csapp-local" means the program has no id. Proposals
 `work/PlayReviewPollWorker.kt`, `ui/theme/Theme.kt`, `data/db/AppDatabase.kt`, `data/db/dao/*.kt`,
 `data/db/entities/SignalEntity.kt`, `domain/model/SignalType.kt`, `ui/settings/SettingsViewModel.kt`,
 `ui/ViewModelFactory.kt`, `ui/nav/CsAppNavHost.kt`, `ui/reply/ReplyViewModel.kt`,
-`ui/dashboard/DashboardScreen.kt`, `app/src/test/java/com/mbaliga/csapp/export/IssuesManifestBuilderTest.kt`,
+`ui/dashboard/DashboardScreen.kt`, `app/src/test/java/com/asoc/ping/export/IssuesManifestBuilderTest.kt`,
 and the import, line-count and `@Test` sweeps over all 64 `.kt` files under `app/src/{main,test}`.
 Program inputs: `Personal-Tracker/PORTING_PROGRAM.md` §0–§3, §4.1–§4.5, this repo's §5 row, §6, §7, §8, and the
 2026-10-06 reader profile of this repository.

@@ -1,4 +1,4 @@
-# csapp — working notes (≤40 lines)
+# csapp (product name: Ping) — working notes (≤40 lines)
 Phone-first support console: ingests Play reviews, GitHub issues, support email per project; clusters deterministically; AI *suggests*; human confirms every send; exports `issues-manifest.v1.json`.
 
 ## Hard rules (see BUILD-SPEC.md §1)
@@ -8,7 +8,7 @@ Phone-first support console: ingests Play reviews, GitHub issues, support email 
 5. File export only, user-initiated. 6. Don't read Assay output. 7. No telemetry; creds only in Keystore.
 8. Permissive licences only (no JavaMail). 9. Colour never carries meaning alone (glyph + label).
 10. Report with the ladder: code-complete / verified / ready-for-owner-review; on-device = NEEDS-DEVICE-VALIDATION.
-11. Don't rename: `csapp`, `com.mbaliga.csapp`; product name lives in `app_name` only.
+11. Product name is **Ping**, applicationId/package `com.asoc.ping` (renamed from `com.mbaliga.csapp`, never published). Internal identifiers stay `csapp` on purpose: repo/Gradle root name, DB `csapp.db`, prefs/keystore names, and the hub-contract `producer.app` = `csapp` (an external contract). Product name lives in `app_name` only.
 
 ## Build
 - `export ANDROID_HOME=/opt/android-sdk LANG=C.UTF-8; ./gradlew testDebugUnitTest lintDebug assembleDebug --console=plain`

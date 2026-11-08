@@ -1,85 +1,309 @@
-# CS App — Play Console answer sheet
+# Ping — Play Console answer sheet
 
 > Only the **deltas** from `Personal-Tracker/store/HOUSE_DEFAULTS.md`.
+>
+> Re-verified 2026-11-04 against `main` @ `080d588`: source, the committed debug APK's
+> merged manifest, and Google's help pages fetched that day. Nothing here has been built
+> in release form or run on a device. Every `docs/VERIFICATION.md` row is still unticked.
 
 | | |
 |---|---|
-| applicationId | `com.mbaliga.csapp` |
-| Version at time of writing | `0.1.0` (versionCode `1`) |
+| applicationId | `com.asoc.ping` (permanent once published) |
+| Version | `1.0.0` (versionCode `2`) |
+| minSdk / targetSdk / compileSdk | `26` / `36` / `36` |
 | Category | **Business** |
-| Contact email | `csapp@asystemofcells.com` |
-| Website | `https://asystemofcells.com/csapp` |
-| Privacy policy | `https://asystemofcells.com/csapp/privacy` |
+| Contact email | `ping@asystemofcells.com` |
+| Website | `https://asystemofcells.com/ping` |
+| Privacy policy | `https://asystemofcells.com/ping/privacy` (working copy: `privacy-policy.md`) |
 
-## ⛔ Read this before anything else
+## Where this stands
 
-**Status:** V1 compiles and is unit-tested (see `docs/STATUS.md`). Nothing below has been submitted to Play; on-device behaviour is owner-verified only.
+- V1 has been on `main` since August 2026. WP0 to WP6 (multi-project, IMAP and Gmail
+  ingestion, AI suggestions, reply governance, ratified export, env-var signing) were
+  completed 2026-11-03 (`docs/STATUS.md`) and merged to `main` in `080d588` on 2026-11-04.
+  CI passed on that commit (unit tests, lint, debug APK, submodule checkout). The old
+  "recover or rebuild" question is moot.
+- The only build artifact is `dist/csapp-1.0.0-debug.apk`: debuggable, debug-signed,
+  same applicationId as release. No release build, no AAB, no upload key.
+- Nothing has been submitted to Play. On-device behaviour is owner-verified only.
 
-There is an open owner decision: **recover the blobs, or discard and rebuild clean**
-from the existing `cs-app-v1-build-plan.md` spec. Until that lands there is nothing
-to submit, and this sheet is a placeholder so that the listing is not what blocks
-things later.
+## Blockers before the first upload
 
-**Two further things are undecided, and this sheet does not decide them:**
-- **The product name.** "CS App" is explicitly a working name in the app's own build
-  plan, not a decision (`NAMES.md`). The title here is a placeholder.
-- **Whether this belongs on a public store at all.** It is a personal developer
-  tool for one person's own portfolio. **Play's internal or closed testing track,
-  or a plain sideload, may be the right home for it**, in which case most of this
-  sheet never gets used. Decide that before doing listing work.
+### 1. There is no uploadable artifact yet
 
-## If it does go to a public listing
+- **Upload key.** None is in the repo or documented (`docs/STATUS.md` lists it as
+  OWNER-ACTION-NEEDED). Release signing reads `CSAPP_KEYSTORE_PATH`,
+  `CSAPP_KEYSTORE_PASSWORD`, `CSAPP_KEY_ALIAS` and `CSAPP_KEY_PASSWORD`. If the path is
+  unset or the file is missing, the release variant is silently **unsigned**; if the file
+  exists but a password or alias is missing, signing is configured with null values (not
+  tested) (`app/build.gradle.kts`). Let Play manage the app signing key and keep this one as
+  the upload key (`Personal-Tracker/store/RUNBOOK.md`).
+- **No AAB lane.** CI's only release command is the tag-gated `assembleRelease` (an APK),
+  and `BUILD-SPEC.md` describes a release APK on tags and never mentions a bundle.
+  `./gradlew :app:bundleRelease` should honour the same signing config but has never run.
+- **The tag-gated release steps in `ci.yml` probably never run.** Their `if:` tests
+  `env.KS_B64 != ''`, but `KS_B64` is defined only in the same step's own `env:`, which a
+  step's `if` normally cannot see. Unconfirmed without a real tag push.
+- **The `shared-libraries` submodule is required to configure any Gradle task**
+  (`includeBuild`, pinned at `4a8b0a3`, crash-recovery 1.5.0). The library repo is public,
+  and CI checked it out fine on `080d588`. The risk is the pin: `4a8b0a3` is the only commit
+  carrying crash-recovery 1.5.0, and it is reachable only from the open PR #3 branch
+  (`claude/fonebrew-development-clzu43`) in `Shared-Libraries-asoc`, not from its `main`,
+  which is still 1.4.0 with no quarantine or salvage code. Merge the 1.5.0 commits into
+  that repo's `main` first, then move the pin to a commit on `main`. Pointing it at today's
+  `main` would silently drop the code the privacy policy's crash-report paragraph describes.
+- **R8 is on for release and nothing in the repo evidences a release build.**
+  `docs/STATUS.md` says "R8 release assembles", but no artifact, log or CI step backs it
+  (the same file calls the path "unverified" under Deviations). `proguard-rules.pro` has
+  kotlinx-serialization, Room and prompt-resource rules, but the result is unverified. Risks
+  to check on a real build: the consumer rules of OkHttp, Room and kotlinx-serialization;
+  the AI prompts are read as resources (`SuggestionService.kt:31`,
+  `getResourceAsStream(...)!!`) and must survive shrinking; crash-recovery shows the raw
+  stack trace and ships no consumer rules, so a release trace will be R8-obfuscated unless a
+  mapping is applied off-device; AGP normally runs `lintVitalRelease` on release builds and
+  CI never has.
+- **The committed debug APK is a trap for your own phone.** Debug and release share one
+  applicationId, so a Play build will not install over it until it is uninstalled, and
+  uninstalling wipes the Keystore-held credentials (`allowBackup=false`).
+- **Store assets are missing**: 512 px icon, feature graphic, screenshots
+  (`fastlane/.../images/README.md`).
 
-### App access — this app genuinely needs it
-This is one of only two apps in the house that **cannot** answer "all functionality
-available without special access". It requires:
-- a Google Play Developer API **service account key**, and
-- a **GitHub token**.
+### 2. Code that makes the paperwork untrue
 
-Play requires working test credentials plus written instructions so a reviewer can
-see the app function. Prepare a **throwaway GitHub account with one dummy repo
-holding a few issues**, and step-by-step instructions. **Never give a reviewer a
-real Play service account key**, which would grant access to the whole developer
-account.
+Each row is something this sheet, the privacy policy or the in-app text would otherwise
+claim. Fix the code, cut the feature from the Play build, or keep the weaker wording
+already used below. All were found by reading source; none was run.
 
-### Data safety
-The app handles other people's content: **Play reviews and GitHub issues written by
-your users, including their review text and public usernames.**
+| # | Defect | Where | What it breaks |
+|---|---|---|---|
+| 1 | **One shared AI key slot.** The key is kept across preset switches and attached as an `Authorization` bearer header (`x-api-key` for Anthropic) to whichever endpoint is current, loopback presets included. Switch DeepSeek to OpenAI, or to ASOM, without retyping a key and the old key goes to the new host. | `AppContainer.kt:93-94,137`, `Providers.kt:34-38,66`, `SettingsViewModel.kt:98-104` | The in-app lines "Secrets are encrypted with the Android Keystore and sent only to their own service" (`SettingsScreen.kt:64`) and "The key is sent only there" (`:185`) |
+| 2 | **"On-device" is decided by the preset, not the address.** The Base URL is free text; a local preset pointed at an https remote host still shows the On-device badge and "Nothing leaves it". | `Providers.kt:31`, `SettingsScreen.kt:182,185` | "Stays on your device" for the local model row |
+| 3 | **IMAP has no hostname verification.** The TLS socket comes from `SSLSocketFactory.getDefault().createSocket(...)` and nothing sets endpoint identification. Android's docs say a raw `SSLSocket` does not verify the host name and the app must. A certificate valid for any other name would be accepted, exposing the IMAP app password. | `ImapClient.kt:49,82-88` | "Encrypted in transit: Yes" for the mail leg |
+| 4 | **The auto-triage switch does not say text leaves the device.** Its help text reads "Only writes pending suggestions for you to accept. Nothing changes without your tap.", and neither it nor the label says text leaves the device. The worker sends review, issue and mail text to the cloud provider after each sync with no tap. In-app text also says "no automatic sends". | `ProjectsScreens.kt:129-132`, `SyncWorker.kt:16-18`, `SettingsScreen.kt:118` | Data safety "shared" answer; the disclosure Google expects for non-obvious background transfers |
+| 5 | **Archiving a project does not stop it.** It only sets a flag; polling, mail routing and auto-triage still include archived projects, and there is no un-archive control. | `ProjectRepository.kt:44-48`, `ProjectDao.kt:26`, `PollCoordinator.kt:28`, `SuggestionService.kt:132-139` | Any claim that archiving stops use of a project |
+| 6 | **No in-app deletion of fetched content.** The only `DELETE` queries remove project sources and mailboxes. Reviews, issues, mail text, suggestions and the reply log stay until Android "Clear storage" or uninstall. Removing a mailbox keeps its mail. | `ProjectDao.kt:23,31` | "Users can delete data in the app" (rewritten below) |
+
+Smaller: the in-app Local text says "local network", but cleartext is allowed only to
+`127.0.0.1` and `localhost` (`network_security_config.xml`); the cloud text says "Review
+text" though issue and mail text are sent too.
+
+### 3. Owner decisions this sheet does not make
+
+- **Product name.** Renamed to **Ping** by the owner on 2026-11-08, with the new ID
+  `com.asoc.ping` (was `com.mbaliga.csapp`, never published). `app_name`, the Home, Settings
+  and mail-hint text, the crash-recovery label and the store title all say Ping. `csapp`
+  deliberately remains in internal identifiers: the repo and Gradle root name, `csapp.db`, the
+  prefs and keystore names, and the export `producer.app` (a hub-contract value). The hosted
+  URLs and mailbox slug above (`/ping`, `ping@`) are proposals: confirm them before the page
+  goes live. The debug APK in `dist/` predates the rename and still carries the old ID.
+- **Public listing or not.** It is a personal developer tool. Play's internal testing is
+  optional and does not count toward the closed-test rule below. Sideload is still open:
+  Android developer verification is enforced from 2026-09-30 only for installs from
+  participating stores in Brazil, Indonesia, Singapore and Thailand; Google's FAQ says
+  sideloaded apps and other stores are not covered yet, with wider rollout planned for 2027,
+  and a limited-distribution account (up to 20 devices) exists
+  (developer.android.com/developer-verification and its FAQ at
+  /developer-verification/guides/faq, fetched 2026-11-04).
+- **What the Play build contains.** Cloud AI providers, the background auto-triage
+  switch, and Gmail each change the Data safety answer. Recommendation: leave Gmail out
+  of the first Play build (see **Gmail**), and either keep cloud AI behind a clear
+  disclosure or ship ASOM and local presets only.
+- **Account type.** Google's page (fetched 2026-11-04) requires a personal account created
+  after 2023-11-13 to run a closed test with at least 12 testers opted in for 14 days
+  before production access, per app. Whether the A System of Cells account is personal or
+  organisation is not recorded.
+
+### 4. Outside the repo, not checked
+
+`https://asystemofcells.com/ping/privacy` returning 200 for a logged-out reader, the
+`ping@asystemofcells.com` alias delivering, and the Play Console account state.
+
+## App access
+
+Ping cannot answer "all functionality is available without special access". Choose
+**All or some functionality is restricted**. Google requires reviewer credentials that are
+reusable, valid regardless of location, bypass 2FA and unlock all functionality (help
+answer 15748846), so say what each credential unlocks:
+
+| To see | Needs |
+|---|---|
+| Incidents, triage, export | Tap Projects, then the `+` button (New project), name it and tap Create. In the project choose the `◉ GitHub` chip, enter a **public** `owner/repo` and tap Add source. Back on Home, pull down. A GitHub token is optional (it only lifts rate limits and reaches private repos). The `+` button on Home opens Add a signal, which adds an item by hand. |
+| Monthly review CSV import | A sample file; no key needed |
+| Support email | A throwaway IMAP mailbox with an app password. Gmail needs the reviewer's own Google OAuth client ID, so do not ask a reviewer to use it. |
+| AI suggestions | Off by default; needs a provider key you supply |
+| **Play review list and reply** | A Play Console **service account key**. A throwaway GitHub account cannot cover this path. |
+
+Never give a reviewer your real service account key. The earlier claim that it "would
+grant access to the whole developer account" is overstated: its reach is whatever Play
+Console's Users and permissions granted (it can be limited to one app and to "Reply to
+reviews"), but the JWT scope `androidpublisher` cannot be narrowed in code, and Google's
+API docs advise against handing out service account private keys. For the Play path,
+offer a screen recording, or a dedicated test developer account that owns a published app
+with commented reviews.
+
+## Data safety
+
+The earlier answer "No, nothing is transmitted to us" tested the wrong thing. Google's
+definition is any transmission off the device, to anyone, including a third party's server
+(help answer 10787469). Declare for the build **as it stands**:
 
 | Question | Answer |
 |---|---|
-| Collect or share any user data? | **No** (nothing is transmitted to us; there is no server of ours) |
-| Encrypted in transit? | Yes |
-| Deletion? | Users can delete data in the app |
+| Collect or share any required user data types? | **Yes** |
+| Types | **Emails** and **Other user-generated content**: the full title or subject and the first 600 characters of the body of up to eight reports per incident (triage), up to 1,200 characters of a review (reply draft), incident titles and summaries (duplicate check), and each incident's severity, status and title (digest), sent to the AI provider the user configures. No sender or recipient field is sent. No reviewer-name or GitHub-login field is sent, but names and addresses can appear inside the review, issue or email text, which is not redacted. Add **Email address** or **User IDs** only if you decide the mailbox username (sent to the user's own mail host) or the service account email (inside the token request to Google) counts. Google's list has no "authentication credentials" type, so credentials are not declared as a type: each goes to the service it belongs to, except that the single AI key goes to whichever AI provider is selected (defect 1). |
+| Optional | Yes. AI is off until the user picks a provider; auto-triage is off by default. |
+| Purpose | App functionality |
+| Processed ephemerally | **Do not claim it.** The exemption fits data held only in memory; what a user-chosen vendor retains is not ours to promise. |
+| Shared | **Recommend Yes** (AI model provider, the user's choice) while the background auto-triage switch ships. **No** is defensible only if the manual AI buttons rely on Google's user-initiated-action exemption *and* the switch gets a prominent in-app disclosure with consent (defect 4). |
+| Encrypted in transit | **Yes** for all HTTPS traffic. `http://127.0.0.1` AI traffic never leaves the phone. IMAP uses TLS but does not verify the server's host name (defect 3), so answer conservatively until it is fixed or IMAP is cut from the Play build; the privacy policy's IMAP sentence says the same. |
+| Data deletion | There is no account and the developer holds no data. In the app, users can remove credentials, mailboxes and project sources. All stored content is removed by Android "Clear storage" or uninstall; files the user saved or shared, and grants at the issuer (GitHub, Google, the mail host), are not. Say **"Users can delete data in the app"** only after a delete control ships (defect 6). |
 
-The nuance to state in the policy rather than hide: the app fetches data **from
-Google and GitHub, with the operator's own credentials**, and stores it locally. The
-"user" for Data safety purposes is the app's operator, not the reviewers whose text
-is fetched. Both facts belong in the privacy policy.
+A Play build **without** cloud AI (ASOM and local presets only) sends nothing except
+operator-credentialed calls to Google Play, GitHub and the mail host, plus the
+user-confirmed reply to Google. Google's pages give no explicit exemption for that either;
+the nearest text is the FAQ about a user uploading to their own Drive or Dropbox, which
+requires that the app "never collects or accesses" the data and so does not fit a client
+that reads it. Declare conservatively and re-read the live form wording.
 
-### Permissions
-| Permission | Why |
+This deliberately diverges from the sibling BYO-key AI sheets (Fyl-Manager, Foto-Xplorr),
+which answer "No" for optional AI. Here the text belongs to third parties (customers,
+reviewers, correspondents), and there is a background mode. Treat it as a conservative
+owner decision, not a finding.
+
+Other App content answers are the house defaults: ads **No**, Advertising ID **No**,
+target audience **18 and over**, news / COVID / government / financial / health **No**.
+
+## Permissions
+
+| Permission | Source | Why |
+|---|---|---|
+| `INTERNET` | app manifest | Play Developer API, GitHub API, your mail server (IMAP) or Gmail, Google sign-in and token endpoints, and the AI provider you choose |
+| `ACCESS_NETWORK_STATE` | app manifest, and `work-runtime` 2.9.1 (it would still merge if the app's line were removed) | Used through WorkManager's connected-network constraint. No app code reads network state, and pull-to-refresh does not check connectivity. |
+| `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, `FOREGROUND_SERVICE` | merged from `work-runtime` 2.9.1 | The periodic sync. Seen in the debug APK; the release manifest has not been built. |
+| `com.asoc.ping.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | merged from `androidx.core` 1.13.1 | App-private signature permission |
+
+All are normal permissions: no declaration form and no demo video. No foreground service
+type is set and nothing starts the foreground service, the boot receiver is disabled,
+there are no notifications (no `POST_NOTIFICATIONS`), and there is no `AD_ID`. Re-check on
+the release AAB: the debug APK also carries `debuggable` and the exported
+`PreviewActivity`, which should be absent from release.
+
+Exported components the app declares: `MainActivity` (launcher only, ignores its intent)
+and `OAuthRedirectActivity` (custom scheme `com.asoc.ping`; the code checks a random
+`state` and uses PKCE, so a hijacked redirect cannot redeem the code). The `FileProvider`
+is not exported. Three library components are also exported, each permission-guarded: WorkManager's
+`SystemJobService` (`BIND_JOB_SERVICE`) and `DiagnosticsReceiver` (`DUMP`), and
+`ProfileInstallReceiver` (`DUMP`). They come from library manifests (work-runtime 2.9.1,
+profileinstaller), not a debug-only source set, so they should be in the release manifest
+too; confirm on the release AAB. The debug-only `PreviewActivity` mentioned above is
+exported with no permission.
+
+## Target API and platform behaviour
+
+- `targetSdk 36` meets Google's rule (new apps and updates must target API 36 from
+  2026-08-31; help answer 11926878, fetched 2026-11-04). The extension to 2026-11-01 has
+  lapsed. Re-check at submit time.
+- 16 KB pages: the only native library is `libandroidx.graphics.path.so`; its segments and
+  zip offsets are 16 KB-aligned in the debug APK. Confirm on the release AAB.
+- Target-36 behaviour to check on a device (read from source only): no screen calls
+  `enableEdgeToEdge`, though each Material 3 Scaffold applies insets itself. At target 35
+  and up the theme's `statusBarColor` has no effect, and `navigationBarColor` is ignored
+  with gesture navigation but still applied with 3-button navigation. The window theme is
+  dark Material while Compose switches to a light scheme, so light-mode system-bar icon
+  contrast is likely wrong. Predictive back is on by default at 36, and the crash-recovery
+  screen's `onBackPressed` override is then not called, so its detail pane would not step
+  back.
+
+## Content rating, UGC and AI content
+
+- Questionnaire: the house default. Category `Utility, Productivity, Communication, or
+  Other`; answer **No** to user-generated content sharing and interaction. The old
+  "Yes, in a limited sense" is not a valid yes/no answer.
+- That **No** is a judgment, not a Google finding. Google's UGC policy also reaches
+  "specialized browsers or clients to direct users to a UGC platform" (help answer
+  9876937), and Ping is a client for GitHub issues and Play reviews. It has no user-to-user
+  posting or sharing and no report or block UI. Its only outbound publication is the
+  developer reply to a Play review, sent after the operator confirms the exact text, and
+  fetched text is shown only to the one operator. The IARC wording is visible only in Console; the rating is IARC's output.
+  Expect Everyone, do not promise it.
+- AI-generated content policy: Google requires in-app reporting or flagging for apps that
+  generate content with AI, and scopes out productivity apps that use AI to improve an
+  existing feature, such as AI-suggested email drafts. Ping's AI only writes pending
+  suggestions a human accepts, and there is no report or flag UI. Google's pages show no
+  separate generative-AI declaration. Unresolved; check what Console asks.
+
+## Gmail
+
+- The scope is `gmail.readonly`, a Google **restricted scope**. The user supplies their
+  own OAuth client ID (the app ships none). Google's API Services User Data Policy allows
+  transfer of such data only to provide user-facing features that are visible in the UI,
+  with consent. Ping forwards the full subject and the first 600 characters of the body
+  of up to eight reports per incident to third-party AI providers, including through the
+  background switch. Read that policy before any public listing that includes Gmail.
+- The redirect `com.asoc.ping:/oauth2redirect` is unverified (`VERIFICATION.md` row 5).
+  Google may require the reversed-client-id scheme for Android client types.
+- A user-owned client in "Testing" status gets short-lived refresh tokens (about 7 days;
+  check Google's current terms).
+- **Recommendation:** leave Gmail out of the first Play build and ship IMAP only. The
+  listing copy and changelog already omit Gmail; the privacy policy keeps the Gmail items
+  marked `<!-- gmail -->` and says how to remove them. If Gmail ships once row 5 is ticked,
+  add this to the email bullet in `full_description.txt` (it needs about 75 characters
+  and the file has 2 to spare, so cut something else) and "or Gmail" to
+  `changelogs/2.txt`: "or Gmail with a read-only sign-in that uses your own Google OAuth
+  client ID".
+
+## Listing gate
+
+`HOUSE_DEFAULTS.md` 4.3 rule 4 says never claim behaviour that is not device-verified, and
+leave it out rather than hedge. All 14 verification rows are unticked, so the copy in
+`fastlane/` is drafted and ready, not cleared. Do not upload until the matching row is
+ticked, or cut the sentence. The last rows below are examples of sentences with no row, not
+a complete list. Rows 1 to 14 also do not exercise: merge, split and recurrence controls,
+the request counter, AI duplicates, reply drafts and the digest, the automatic-triage
+switch, and the mail fetch limits. Walk the whole description against the rows before
+upload.
+
+| Listing claim | Cleared by `VERIFICATION.md` row |
 |---|---|
-| `INTERNET` | Play Developer API and GitHub API calls. |
-| `ACCESS_NETWORK_STATE` | Avoid polling while offline. |
+| GitHub issues | 2 |
+| Play reviews | 3 |
+| IMAP mail | 4 |
+| Gmail (not in the listing now; add back only when ticked) | 5 |
+| Reply and edit reply | 6, 7 |
+| On-device and cloud AI | 8, 9 |
+| Export | 10 |
+| Background sync | 14 |
+| Monthly CSV import | **no row. Add one:** only synthetic UTF-16 fixtures have been parsed, never a real Play export |
+| Reply in mail app | **no row. Add one or cut the sentence** |
+| Swipe to acknowledge or dismiss with undo; Filter & sort; the `+` button (Add a signal) | **no row. Add one or cut the sentences** |
+| 15 / 30 / 60 minute choice | row 14 covers background sync, not the choice |
 
-### targetSdk
-`targetSdk = 34`, which is behind Play's current floor. Bump before submitting.
-
-### Content rating
-- Category `Utility, Productivity, Communication, or Other`.
-- **"Does the app display user-generated content?"** → **Yes, in a limited sense**:
-  it displays review and issue text written by third parties. It is not shared
-  onward and there is no social surface, but answer honestly if asked; a business
-  tool that shows fetched support tickets is not a UGC platform.
-- Expected **Everyone**.
+The listing no longer mentions the crash recovery screen. Row 12 is debug-only and the app
+has no crash trigger, so it does not clear that claim for a release build; exercise the
+screen on an R8 release build before putting it back.
 
 ## Pre-submit checklist
 
-- [ ] Owner decision on recover-or-rebuild. Nothing else matters until then.
-- [ ] Decide the product name.
-- [ ] Decide whether this is a public listing at all, or internal-track only.
-- [ ] Bump `targetSdk`.
-- [ ] Prepare throwaway reviewer credentials that are not your real ones.
-- [ ] Screenshots with **fabricated or anonymised** review text. Do not publish real
-      users' complaints, usernames or avatars in a store listing.
+- [ ] Decide the product name; set `app_name` and `title.txt` together
+- [ ] Decide public listing or internal track; confirm account type and closed-test needs
+- [ ] Decide the Play build's scope: cloud AI, background auto-triage, Gmail
+- [ ] Fix or cut defects 1 to 6, or keep the weaker wording in this sheet and the policy
+- [ ] Initialise the submodule; get the crash-recovery 1.5.0 commits (pin `4a8b0a3`, currently only on PR #3) merged to `Shared-Libraries-asoc` main, then move the pin to a commit on `main` that contains them
+- [ ] Create the upload keystore, set `CSAPP_KEYSTORE_PATH`, `CSAPP_KEYSTORE_PASSWORD`, `CSAPP_KEY_ALIAS` and `CSAPP_KEY_PASSWORD`, run `./gradlew :app:bundleRelease`
+- [ ] Inspect the release AAB: merged manifest, R8 output, prompts present, 16 KB alignment
+- [ ] Run `VERIFICATION.md` on a phone; tick the rows the listing gate needs; add the CSV row
+- [ ] Render the 512 px icon and the 1024x500 feature graphic; take screenshots with fabricated or anonymised text
+- [ ] Host `privacy-policy.md` at the privacy URL; confirm 200 and that the alias delivers
+- [ ] Prepare reviewer credentials and a plan for the Play reply path
+- [ ] Re-check Google's target-API rule and the live Data safety wording at submit time
+
+## Stale elsewhere (not changed here)
+
+`Personal-Tracker`: `NAMES.md` (Ping row says the source never compiled),
+`store/APP_MATRIX.md` (csapp "0.1.0 (1), Unbuildable"), `store/RUNBOOK.md` (csapp
+targetSdk 34), `store/HOUSE_DEFAULTS.md` 3.8 ("every network call in every app is HTTPS"
+is false for csapp) and the section 2 csapp exception (omits mail and cloud AI).
+This repo: `docs/PRODUCT-AND-ARCHITECTURE.md` (0.1.0 / targetSdk 34 and
+`EncryptedCredentialStore`), `docs/PORTING-PLAN.md`, `docs/STATUS.md` ("R8 release
+assembles"), `docs/VERIFICATION.md` (names `csapp-debug.apk`), `BUILD-SPEC.md` (IMAP
+description).
