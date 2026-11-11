@@ -1,0 +1,2 @@
+app/src/test/resources/** -text
+*.sh text eol=lf

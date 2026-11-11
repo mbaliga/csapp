@@ -1,6 +1,12 @@
 package com.mbaliga.csapp.ui.nav
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -23,6 +29,32 @@ import com.mbaliga.csapp.ui.reply.ReplyViewModel
 import com.mbaliga.csapp.ui.settings.SettingsScreen
 import com.mbaliga.csapp.ui.settings.SettingsViewModel
 import com.mbaliga.csapp.ui.vmFactory
+
+/**
+ * Hardware-keyboard navigation for desktop-mode windows: Esc goes back, Ctrl+, opens Settings,
+ * Ctrl+1 / Ctrl+2 switch between Home and Projects, Ctrl+N opens the new-signal screen.
+ * Navigation only: no shortcut reaches confirm, send or accept; replies still go through the
+ * dialog button (ReplyViewModel.confirmAndSend). Returns true when the event was consumed.
+ */
+fun NavHostController.handleShortcut(event: KeyEvent): Boolean {
+    if (event.type != KeyEventType.KeyDown) return false
+    if (event.key == Key.Escape && !event.isCtrlPressed) {
+        // Never pop the start destination: that would leave an empty NavHost.
+        return previousBackStackEntry != null && popBackStack()
+    }
+    if (!event.isCtrlPressed) return false
+    when (event.key) {
+        Key.Comma -> navigate(Destinations.SETTINGS) { launchSingleTop = true }
+        Key.One -> popBackStack(Destinations.HOME, inclusive = false)
+        Key.Two -> navigate(Destinations.PROJECTS) {
+            popUpTo(Destinations.HOME)
+            launchSingleTop = true
+        }
+        Key.N -> navigate(Destinations.NEW_SIGNAL) { launchSingleTop = true }
+        else -> return false
+    }
+    return true
+}
 
 @Composable
 fun CsAppNavHost(container: AppContainer, nav: NavHostController = rememberNavController()) {
